@@ -1,0 +1,71 @@
+{
+  // ===== LaTeX Workshop =====
+  // 只写命令名, 不写绝对路径, 保证在每台电脑上都能用
+  "latex-workshop.latex.tools": [
+    {
+      "name": "xelatex",
+      "command": "xelatex",
+      "args": [
+        "-synctex=1",
+        "-interaction=nonstopmode",
+        "-file-line-error",
+        "-shell-escape",
+        "%DOC%"
+      ],
+      "env": {}
+    },
+    {
+      "name": "biber",
+      "command": "biber",
+      "args": ["%DOCFILE%"],
+      "env": {}
+    }
+  ],
+
+  "latex-workshop.latex.recipes": [
+    {
+      "name": "xelatex x2",
+      "tools": ["xelatex", "xelatex"]
+    },
+    {
+      "name": "xelatex x1 (快速预览)",
+      "tools": ["xelatex"]
+    },
+    {
+      "name": "xelatex -> biber -> xelatex x2 (含参考文献)",
+      "tools": ["xelatex", "biber", "xelatex", "xelatex"]
+    }
+  ],
+
+  // 保存即编译
+  "latex-workshop.latex.autoBuild.run": "onSave",
+
+  // 编译成功后清理中间文件, 失败时保留以便排查
+  "latex-workshop.latex.autoClean.run": "onBuilt",
+  "latex-workshop.latex.clean.subfolder.enabled": true,
+  "latex-workshop.latex.clean.fileTypes": [
+    "*.aux", "*.bbl", "*.blg", "*.idx", "*.ind", "*.lof", "*.lot",
+    "*.out", "*.toc", "*.acn", "*.acr", "*.alg", "*.glg", "*.glo",
+    "*.gls", "*.fls", "*.log", "*.fdb_latexmk", "*.snm", "*.nav",
+    "*.synctex.gz", "*.run.xml", "*.bcf"
+  ],
+
+  // 内置标签页预览, 支持正向反向跳转
+  "latex-workshop.view.pdf.viewer": "tab",
+  "latex-workshop.synctex.afterBuild.enabled": true,
+
+  // 只把错误显示成红色波浪线, 警告太多会刷屏
+  "latex-workshop.message.error.show": true,
+  "latex-workshop.message.warning.show": false,
+
+  // ===== 编辑体验 =====
+  "[latex]": {
+    "editor.wordWrap": "on",
+    "editor.tabSize": 2,
+    "editor.formatOnSave": false,
+    "editor.suggestSelection": "recentlyUsed"
+  },
+
+  "files.encoding": "utf8",
+  "files.eol": "\n"
+}

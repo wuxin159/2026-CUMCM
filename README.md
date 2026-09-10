@@ -85,6 +85,31 @@ subprocess.run(["python", "-c", "..."])   # 而不是 C:/Python311/python.exe
 └── docs/                  # 思路记录、会议纪要、参考文献
 ```
 
+## 快速开始
+
+克隆后先确认两个命令可用，安装位置不重要，能被 `PATH` 找到即可：
+
+```powershell
+python --version
+xelatex --version
+```
+
+论文编译，在 `paper/` 目录下执行，必须跑两遍，第一遍生成交叉引用，第二遍才把图表编号填对：
+
+```powershell
+xelatex -synctex=1 -interaction=nonstopmode -shell-escape main.tex
+xelatex -synctex=1 -interaction=nonstopmode -shell-escape main.tex
+```
+
+用 VS Code 则更省事。仓库自带 `.vscode/settings.json`，装好 LaTeX Workshop 扩展后：
+
+| 操作 | 快捷键 |
+| ---- | ------ |
+| 编译 | `Ctrl+Alt+B`，或直接保存文件自动触发 |
+| 侧边预览 PDF | `Ctrl+Alt+V` |
+| 源码跳到 PDF 对应位置 | `Ctrl+Alt+J` |
+| PDF 跳回源码 | 在 PDF 上 `Ctrl+左键` |
+
 ## 分工
 
 | 角色 | 成员 | 主要职责 |

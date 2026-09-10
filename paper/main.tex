@@ -1,0 +1,249 @@
+% !TeX program = xelatex
+% 2026 CUMCM 论文骨架
+% 编译: xelatex main.tex   (VS Code 中直接 Ctrl+Alt+B)
+% 所有路径均相对本文件所在目录, 不要写绝对路径
+
+\documentclass[12pt, a4paper]{article}
+
+% ---------- 中文 ----------
+\usepackage[UTF8, scheme=plain]{ctex}
+
+% ---------- 数学 ----------
+\usepackage{amsmath, amssymb, amsthm, bm}
+
+% ---------- 表格 ----------
+\usepackage{booktabs}      % 三线表
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{array}
+
+% ---------- 图形 ----------
+\usepackage{graphicx}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric}
+\graphicspath{{../figures/}}
+
+% 图形外部化: 图多到编译变慢时再打开这两行, 需编译参数带 -shell-escape
+% \usepgfplotslibrary{external}
+% \tikzexternalize[prefix=../figures/cache/]
+
+% ---------- 版式 ----------
+\usepackage[a4paper, margin=2.5cm]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[hidelinks]{hyperref}
+
+\captionsetup[figure]{labelsep=quad, font=small}
+\captionsetup[table]{labelsep=quad, font=small}
+
+% ---------- 代码块 ----------
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue!70!black},
+  commentstyle=\color{green!45!black},
+  stringstyle=\color{orange!80!black},
+}
+
+% ---------- 定理环境 ----------
+\newtheorem{assumption}{假设}
+\newtheorem{definition}{定义}
+
+\title{\textbf{基于 XXX 模型的 YYY 问题研究}}
+\author{参赛队号：xxxxxxx}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+% ==================== 摘要 ====================
+\begin{center}
+  \textbf{\large 摘\quad 要}
+\end{center}
+
+本文针对 XXX 问题，建立了 YYY 模型。
+
+针对问题一，首先对原始数据进行清洗与预处理，而后建立了 ZZZ 模型，
+采用 WWW 算法求解，得到结果为 $\cdots$。
+
+针对问题二，$\cdots$
+
+针对问题三，$\cdots$
+
+最后，本文对模型进行了灵敏度分析，验证了模型的稳健性，并讨论了模型的优缺点与推广方向。
+
+\vspace{1em}
+\noindent\textbf{关键词：}\quad 关键词一\quad 关键词二\quad 关键词三
+
+\newpage
+
+% ==================== 正文 ====================
+\section{问题重述}
+
+\subsection{问题背景}
+
+在此简述赛题背景。
+
+\subsection{问题提出}
+
+本文需要解决以下问题：
+\begin{enumerate}[label=(\arabic*)]
+  \item 问题一的描述。
+  \item 问题二的描述。
+  \item 问题三的描述。
+\end{enumerate}
+
+\section{问题分析}
+
+整体求解思路如图~\ref{fig:route} 所示。
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+    node distance=1.4cm and 1.6cm,
+    every node/.style={font=\small},
+    box/.style={draw, rounded corners, minimum width=2.4cm, minimum height=0.9cm, align=center},
+    arrow/.style={-{Stealth[length=2.5mm]}, thick},
+  ]
+    \node[box] (data)  {数据预处理};
+    \node[box, right=of data]  (model) {模型建立};
+    \node[box, right=of model] (solve) {算法求解};
+    \node[box, right=of solve] (check) {结果检验};
+    \node[box, below=of model] (sens)  {灵敏度分析};
+
+    \draw[arrow] (data)  -- (model);
+    \draw[arrow] (model) -- (solve);
+    \draw[arrow] (solve) -- (check);
+    \draw[arrow] (check.south) -- ++(0,-0.6) -| (sens.east);
+  \end{tikzpicture}
+  \caption{本文技术路线}
+  \label{fig:route}
+\end{figure}
+
+\section{模型假设}
+
+\begin{assumption}
+  假设一的内容。
+\end{assumption}
+
+\begin{assumption}
+  假设二的内容。
+\end{assumption}
+
+\section{符号说明}
+
+\begin{table}[H]
+  \centering
+  \caption{符号说明}
+  \label{tab:symbols}
+  \begin{tabular}{cl}
+    \toprule
+    符号 & 含义 \\
+    \midrule
+    $x_i$        & 第 $i$ 个决策变量 \\
+    $w_i$        & 第 $i$ 项指标的权重 \\
+    $\bm{A}$     & 约束系数矩阵 \\
+    $f(\bm{x})$  & 目标函数 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{模型的建立与求解}
+
+\subsection{问题一模型}
+
+建立如下优化模型：
+
+\begin{equation}
+  \label{eq:model}
+  \begin{aligned}
+    \min_{\bm{x}} \quad & f(\bm{x}) = \sum_{i=1}^{n} w_i \left( x_i - \mu_i \right)^2 \\
+    \text{s.t.} \quad   & \bm{A}\bm{x} \leq \bm{b}, \\
+                        & x_i \geq 0, \quad i = 1, 2, \ldots, n.
+  \end{aligned}
+\end{equation}
+
+\subsection{求解结果}
+
+算法迭代过程如图~\ref{fig:conv} 所示，目标函数值在第 8 次迭代后趋于稳定。
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      width=0.8\linewidth, height=6cm,
+      xlabel={迭代次数}, ylabel={目标函数值 $f(\bm{x})$},
+      grid=major,
+      legend pos=north east,
+      tick label style={font=\small},
+      label style={font=\small},
+    ]
+      \addplot[thick, mark=*, mark size=1.4pt] table [x=iter, y=obj, col sep=comma] {../results/convergence.csv};
+      \legend{遗传算法}
+    \end{axis}
+  \end{tikzpicture}
+  \caption{目标函数收敛曲线}
+  \label{fig:conv}
+\end{figure}
+
+各模型的对比结果见表~\ref{tab:compare}。
+
+\begin{table}[H]
+  \centering
+  \caption{不同模型的求解结果对比}
+  \label{tab:compare}
+  \begin{tabular}{lcc}
+    \toprule
+    模型     & 均方误差 & 运行时间/s \\
+    \midrule
+    线性回归 & 12.4 & 0.03  \\
+    随机森林 & 8.1  & 1.72  \\
+    遗传算法 & 6.7  & 15.40 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{模型的检验与灵敏度分析}
+
+对关键参数在 $\pm 10\%$ 范围内扰动，结果表明目标函数值变化不超过 $3\%$，模型稳健。
+
+\section{模型的评价与推广}
+
+\subsection{模型的优点}
+\begin{enumerate}[label=(\arabic*)]
+  \item 优点一。
+  \item 优点二。
+\end{enumerate}
+
+\subsection{模型的缺点}
+\begin{enumerate}[label=(\arabic*)]
+  \item 缺点一。
+\end{enumerate}
+
+\begin{thebibliography}{9}
+  \bibitem{ref1} 作者. 书名[M]. 出版地: 出版社, 2020.
+  \bibitem{ref2} 作者. 论文标题[J]. 期刊名, 2021, 卷(期): 起止页码.
+\end{thebibliography}
+
+\newpage
+\appendix
+\section{附录：核心代码}
+
+\begin{lstlisting}[language=Python, caption={模型求解主程序}]
+from pathlib import Path
+import pandas as pd
+
+ROOT = Path(__file__).resolve().parents[1]
+df = pd.read_csv(ROOT / "data" / "processed" / "clean.csv")
+\end{lstlisting}
+
+\end{document}

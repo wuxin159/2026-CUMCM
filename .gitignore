@@ -34,4 +34,14 @@ slprj/
 .DS_Store
 Thumbs.db
 .idea/
-.vscode/
+
+# 共享编辑器配置, 个人配置不提交
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# PGFPlots 图形外部化缓存
+figures/cache/
+
+# 论文编译产物, 每人编译结果不同, 避免二进制冲突
+paper/*.pdf
