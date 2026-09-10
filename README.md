@@ -62,7 +62,8 @@ subprocess.run(["python", "-c", "..."])   # 而不是 C:/Python311/python.exe
 ### 其他多机注意事项
 
 - **换行符与编码**：源文件统一 UTF-8；git 在 Windows 上会提示 LF/CRLF 转换，属正常现象
-- **文件名**：只用英文、数字、`-`、`_`，避免中文和空格，防止跨系统与 LaTeX 编译出错
+- **文件名用中文**：脚本、数据、图表一律用中文命名，见「命名与作图」一节。
+  已实测中文名可正常运行与编译。唯一禁止的是空格，用它分隔会给命令行操作带来麻烦
 - **依赖同步**：新装的包及时写入 `requirements.txt`，其他机器 `pip install -r requirements.txt` 即可对齐
 - **大小写敏感**：Windows 不区分文件名大小写而 Linux/macOS 区分，引用文件时大小写务必与实际一致
 - **开工前先 `git pull`，收工后及时 `git push`**，减少多机之间的冲突
@@ -109,6 +110,48 @@ xelatex -synctex=1 -interaction=nonstopmode -shell-escape main.tex
 | 侧边预览 PDF | `Ctrl+Alt+V` |
 | 源码跳到 PDF 对应位置 | `Ctrl+Alt+J` |
 | PDF 跳回源码 | 在 PDF 上 `Ctrl+左键` |
+
+## 命名与作图
+
+### 命名规则
+
+脚本、数据、图表全部用中文命名，让文件名本身说清它算什么、画什么。
+
+| 位置 | 示例 |
+| ---- | ---- |
+| `src/` | `数据预处理.py`、`问题一遗传算法.py` |
+| `results/` | `问题一收敛曲线.csv`、`灵敏度分析结果.csv` |
+| `figures/` | `技术路线图.pdf`、`问题二热力图.pdf` |
+
+已在本机实测通过，全部无报错：中文名脚本可直接运行也可被 `import`，
+中文名 CSV 可被 Python 和 PGFPlots 读取，中文名 PDF 可被 `\includegraphics` 引用。
+仓库已设 `core.quotepath false`，中文文件名在 git 里正常显示而非转义成八进制。
+
+两条硬性要求：**不要用空格**，会给命令行带来麻烦；**必须用 xelatex 编译**，
+pdflatex 处理不了中文文件名。
+
+### 图中文字一律用中文
+
+坐标轴标签、图例、注释全部中文，不要中英混排。PGFPlots 由 LaTeX 排版，
+中文天然可用，还能在标签里直接写 `$lpha_i$` 这样的公式。
+
+### 三种作图方式怎么选
+
+| 方式 | 适用 | 产物 |
+| ---- | ---- | ---- |
+| PGFPlots 直接画 | 有数据的常规图：折线、散点、柱状、误差棒、热力图 | 图在论文里直接排出，字体与正文完全一致 |
+| Python 脚本画 | PGFPlots 吃力的图：地理分布、复杂网络、大数据量散点 | 导出 PDF 或 SVG 存入 `figures/`，绝不导出 PNG |
+| AI 辅助画 | 没有数据的示意图：技术路线、模型结构、机理示意 | 由 Claude 手写 TikZ 代码，编译成矢量图 |
+
+默认走第一种。Python 出图时必须配置中文字体，且给一个回退列表而不要写死单个字体名：
+
+```python
+plt.rcParams.update({
+    "font.sans-serif": ["Microsoft YaHei", "SimHei", "Noto Sans CJK SC"],
+    "axes.unicode_minus": False,
+})
+fig.savefig(ROOT / "figures" / "问题三地理分布.pdf")   # 矢量, 不要存 PNG
+```
 
 ## 论文模板
 
