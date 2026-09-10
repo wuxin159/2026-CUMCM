@@ -1,12 +1,15 @@
-% 2026 CUMCM 参赛论文
+% 2026 CUMCM 参赛论文 —— B 题 无线电干扰源的快速自动定位与清除
 %
 % 模板: latexstudio/CUMCMThesis (社区维护, 非官方出品)
 %       cumcmthesis.cls + cumcm2026.sty 已随仓库提交, 无需额外安装
 % 编译: xelatex 连续两遍, 或在项目根目录执行 .\build.ps1
 %
-% 注意: 不要在此处加 "% !TeX program = xelatex" 魔法注释。
+% 注意: 不要在此处加 “% !TeX program = xelatex” 魔法注释。
 % LaTeX Workshop 读到它会改用内置默认工具, 绕过 .vscode/settings.json
 % 里的编译方案, 结果只编译一遍, 交叉引用永远是 ??。
+%
+% 当前进度: 只完成问题一。问题二、三、四仅留标题占位。
+% 摘要与关键词待四问全部完成后统一撰写。
 
 % withoutpreface 去掉封面与编号专用页, 这是 2026 年电子版提交的要求。
 % 打印纸质版时改回 \documentclass{cumcmthesis} 以生成承诺书和编号页。
@@ -14,32 +17,45 @@
 
 \usepackage{cumcm2026}
 
+% 算法伪代码环境: 模板未提供, 在此补上。
+% algorithm 提供浮动体, algpseudocode 提供 \State \If \For 等语句。
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\floatname{algorithm}{算法}
+
+% 模板用 \newtheorem 定义了 proof, 会排出「证明 5」这类与定理号对不上的编号。
+% 改为不编号, 并在末尾加 QED 记号。
+\renewenvironment{proof}{\par\noindent\textbf{证明}\quad}{\hfill$\square$\par\medskip}
+\renewcommand{\algorithmicrequire}{\textbf{输入:}}
+\renewcommand{\algorithmicensure}{\textbf{输出:}}
+
 % ---------- 绘图 ----------
 % 技术路线: Python 只算不画, 结果写入 results/*.csv, 由 PGFPlots 读取绘制。
-% 这样图中字体与正文完全一致, 坐标轴标签可直接写 $\alpha_i$ 交给 LaTeX 排版。
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
-\usetikzlibrary{arrows.meta, positioning, shapes.geometric}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, calc}
 
-% 类文件已把 graphicspath 设为 figures/ 等, 此处补上仓库根目录的 figures/
 \graphicspath{{../figures/}{figures/}}
+
+% 数据目录, 便于统一改路径
+\newcommand{\datadir}{../results}
 
 % 图形外部化: 图多到编译明显变慢时再启用, 编译参数需带 -shell-escape
 % \usepgfplotslibrary{external}
 % \tikzexternalize[prefix=../figures/cache/]
 
 %===================================
-\title{基于 XXX 模型的 YYY 问题研究}
-\tihao{A}                    % 题号, 填 A/B/C/D/E
+\title{无线电干扰源的快速自动定位与清除}
+\tihao{B}
 \baominghao{xxxxxxxx}        % 报名号
 \schoolname{XX 大学}
 \membera{队员一}
 \memberb{队员二}
 \memberc{队员三}
-\supervisor{}                % 辅导老师
+\supervisor{}
 \yearinput{2026}
 \monthinput{9}
-\dayinput{1}
+\dayinput{13}
 %===================================
 
 \begin{document}
@@ -47,171 +63,574 @@
 \maketitle
 
 \begin{abstract}
-本文针对 XXX 问题，建立了 YYY 模型。
-
-针对问题一，首先对原始数据进行清洗与预处理，而后建立了 ZZZ 模型，
-采用 WWW 算法求解，得到结果为 $\cdots$。
-
-针对问题二，$\cdots$
-
-针对问题三，$\cdots$
-
-最后，本文对模型进行了灵敏度分析，验证了模型的稳健性，
-并讨论了模型的优缺点与推广方向。
+% TODO: 四问全部完成后统一撰写摘要。
+% 需回答: 解决什么问题、用了什么模型、核心结果是什么、结论有什么实际意义。
+待四问全部完成后撰写。
 \end{abstract}
 
-\keywords{关键词一\quad 关键词二\quad 关键词三}
+\keywords{待定\quad 待定\quad 待定}
 
 \tableofcontents
 
 \newpage
 
+%======================================================================
 \section{问题重述}
 
 \subsection{问题背景}
 
-在此简述赛题背景。
+无线电干扰源的定位与清除是无线电频谱管理的重要任务，通常分为初步监测、区域性排查与
+精准定位三个阶段。前两个阶段借助固定监测站、移动监测车或无人机完成大范围信号采集，
+将干扰源圈定在一片区域内；受环境遮挡与低功率干扰源的限制，最后的精准定位历来需要技术
+人员携带便携式测向机徒步排查，依据场强变化与方向特征逐步逼近。为在危险环境中替代人工
+并提高效率，需研制搭载于机器狗的干扰源自动定位清除系统，其核心是一套能在最短时间内
+完成“搜索—定位—清除”闭环的策略与算法。
+
+目标区域为半径 $1800$ 米的圆域，取圆心为坐标原点，正东为 $x$ 轴正向，正北为 $y$ 轴正向。
+干扰源个数未知，各占互不相同的频道。测向机在检测点测得干扰源的\textbf{示向度}，
+即由该点指向干扰源的方位角，受当地电磁环境影响存在不超过 $1^\circ$ 的误差。
 
 \subsection{问题提出}
 
-本文需要解决以下问题：
+本文需要解决以下四个问题：
+
 \begin{enumerate}[label=(\arabic*)]
-  \item 问题一的描述。
-  \item 问题二的描述。
-  \item 问题三的描述。
+  \item 已知若干个检测点坐标及某干扰源关于这些检测点的示向度，给出采用交会定位法
+        计算多边形定位区域直径的算法，并判断以定位区域直径为直径的圆能否覆盖该定位区域。
+  \item 已知某全向干扰源在一个检测点处测得的示向度，给出第二个检测点的选择策略，
+        并给出第二个检测点的候选区域。
+  \item 目标区域内全为全向干扰源、总数在 $10\sim16$ 之间但具体个数未知，
+        制定机器狗自动搜索定位及清除的策略与算法，在确保全部清除的前提下使总时间最短。
+  \item 目标区域内既有全向干扰源又有定向干扰源，定向干扰源的个数与定向方向均未知，
+        在此条件下给出检测与清除的策略及算法。
 \end{enumerate}
 
+%======================================================================
 \section{问题分析}
 
-整体求解思路如图~\ref{fig:route} 所示。
+\subsection{问题一的分析}
 
-\begin{figure}[H]
-  \centering
-  \begin{tikzpicture}[
-    node distance=1.4cm and 1.5cm,
-    every node/.style={font=\small},
-    box/.style={draw, rounded corners, minimum width=2.3cm,
-                minimum height=0.85cm, align=center},
-    arrow/.style={-{Stealth[length=2.5mm]}, thick},
-  ]
-    \node[box] (data)  {数据预处理};
-    \node[box, right=of data]  (model) {模型建立};
-    \node[box, right=of model] (solve) {算法求解};
-    \node[box, right=of solve] (check) {结果检验};
-    \node[box, below=of model] (sens)  {灵敏度分析};
+问题一是后续三问的几何基础，其本质是一个\textbf{集员估计}问题而非参数估计问题。
 
-    \draw[arrow] (data)  -- (model);
-    \draw[arrow] (model) -- (solve);
-    \draw[arrow] (solve) -- (check);
-    \draw[arrow] (check.south) -- ++(0,-0.6) -| (sens.east);
-  \end{tikzpicture}
-  \caption{本文技术路线}
-  \label{fig:route}
-\end{figure}
+题目给出的误差信息是一个\textbf{确界}：示向度与真实方位角之差落在 $[-1^\circ,1^\circ]$ 内，
+而未给出任何分布假设。更关键的是，附录 2 明确指出\textbf{同一地点的电磁环境干扰是固定的，
+重复检测不会改变检测误差}。这意味着在同一检测点反复测量不产生任何新信息，
+基于独立重复观测的平均化降噪、最小二乘拟合与卡尔曼滤波等方法在此均不适用。
 
+因此，本文采用集员估计的思路：一次检测所提供的信息不是一条射线，而是一个以检测点为顶点、
+半角为 $1^\circ$ 的\textbf{楔形区域}，干扰源必落于其中；多次检测的信息通过\textbf{取交集}
+而非加权平均来融合。由于楔形的张角远小于平角，每个楔形可精确表示为两个半平面之交，
+于是定位区域归结为若干半平面的交，必为凸多边形，其直径可在顶点对上取到。
+
+第二小问表面上是一个“是否”的判断，实则要求给出\textbf{充要判据}并讨论其紧性。
+本文将说明：该问题与最小覆盖圆半径是否达到其下界等价，答案一般为否，
+且保证覆盖所需的半径由 Jung 定理给出。
+
+\subsection{问题二至四的分析}
+
+% TODO: 待问题二、三、四完成后补写。
+
+%======================================================================
 \section{模型假设}
 
+在不改变题目核心约束的前提下，作如下假设。其中假设 (1)--(3) 直接来自题目，
+假设 (4)--(6) 是本文为完成定量分析所作的建模约定，并非题目直接给定。
+
 \begin{enumerate}[label=(\arabic*)]
-  \item 假设一的内容。
-  \item 假设二的内容。
+  \item 测向机在检测点测得的示向度与干扰源真实方位角之差的绝对值不超过 $1^\circ$
+        （题目附录 2 给定）。
+  \item 示向度误差由检测点所处的电磁环境决定，在同一地点重复检测不改变该误差
+        （题目附录 2 给定）。
+  \item 所有干扰源位于半径 $1800$ 米的目标区域内；检测点位置不受此限制
+        （题目附件 2 第 1.1 节给定）。
+  \item 假设示向度误差 $\varepsilon_{i,c}$ 由检测点位置 $i$ 与频道 $c$ 共同决定，
+        对固定的 $(i,c)$ 保持不变，不同 $(i,c)$ 之间不作相关性假设。题目仅说明
+        误差由地点决定，未言明同一地点不同频道之间的关系，故此处取不多不少的约定。
+  \item 在生成数值算例时，假设误差在 $[-1^\circ,1^\circ]$ 上服从均匀分布。
+        题目仅给出误差的确界而未指定分布，均匀分布是仅知支撑区间时的最大熵选择。
+        需要强调的是，\textbf{本文问题一的全部结论只依赖确界 $|\varepsilon|\le 1^\circ$，
+        与分布形态无关}，该假设仅用于构造算例，其影响将在第 \ref{sec:p1check} 节说明。
+  \item 忽略测向机与干扰源的高度差异，视为同一平面上的二维问题（题目附录 2 给定）。
 \end{enumerate}
 
+%======================================================================
 \section{符号说明}
 
 \begin{table}[H]
   \centering
   \caption{符号说明}
   \label{tab:symbols}
-  \begin{tabular}{cl}
+  \begin{tabular}{clc}
     \toprule
-    符号 & 含义 \\
+    符号 & 含义 & 单位 \\
     \midrule
-    $x_i$       & 第 $i$ 个决策变量 \\
-    $w_i$       & 第 $i$ 项指标的权重 \\
-    $\bm{A}$    & 约束系数矩阵 \\
-    $f(\bm{x})$ & 目标函数 \\
+    $S_i=(x_i,y_i)$ & 第 $i$ 个检测点的坐标，$i=1,2,\ldots,n$ & 米 \\
+    $\theta_{i,c}$  & 检测点 $i$ 对频道 $c$ 测得的示向度，取值于 $[0^\circ,360^\circ)$ & 度 \\
+    $\varepsilon_{i,c}$ & 检测点 $i$ 对频道 $c$ 的示向度误差 & 度 \\
+    $\delta$        & 示向度误差半角，本文取 $\delta=1^\circ$ & 度 \\
+    $R$             & 目标区域半径，$R=1800$ & 米 \\
+    $G$             & 干扰源的真实位置 & --- \\
+    $u_i^{\mathrm{lo}},u_i^{\mathrm{hi}}$ & 方向 $\theta_i-\delta$、$\theta_i+\delta$ 的单位向量 & --- \\
+    $W_i$           & 检测点 $i$ 确定的楔形区域 & --- \\
+    $L=\bigcap_i W_i$ & 定位区域 & --- \\
+    $d$             & 定位区域的直径，$d=\max_{P,Q\in L}|PQ|$ & 米 \\
+    $(A,B)$         & 实现直径的顶点对，$|AB|=d$ & --- \\
+    $R_{\min}$      & 定位区域的最小覆盖圆半径 & 米 \\
+    $\varphi$       & 两个检测点对干扰源的交会角 & 度 \\
+    $m$             & 定位区域的顶点个数 & --- \\
+    $\ell$          & 检测点到干扰源的距离上限（定理 \ref{thm:clearable}） & 米 \\
+    $\ell^{*}$      & 保证可一次清除的距离阈值，$\ell^{*}\approx770$ & 米 \\
+    $E$             & 顶点超出“以直径为直径的圆”的最大距离 & 米 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
+问题一只涉及单个干扰源，故在第 \ref{sec:p1} 节中略去频道下标 $c$，简记为 $\theta_i$、
+$\varepsilon_i$。问题三、四需同时处理多个频道，届时恢复双下标。
+此外，定理 \ref{thm:counter} 中的 $\rho,h,r_1,r_2,s$ 为该构型的局部符号，均在定理陈述中就地定义。
+
+%======================================================================
 \section{模型的建立与求解}
 
-\subsection{问题一模型}
+\subsection{问题一：交会定位区域的直径与覆盖圆问题}
+\label{sec:p1}
 
-建立如下优化模型：
+\subsubsection{定位区域的数学刻画}
+
+设干扰源位于 $G$，检测点 $S_i$ 处测得的示向度为 $\theta_i$。由假设 (1)，真实方位角与
+$\theta_i$ 之差不超过 $\delta$，故 $G$ 必落在以 $S_i$ 为顶点、$\theta_i$ 为中心方向、
+半角为 $\delta$ 的\textbf{楔形区域}内：
 
 \begin{equation}
-  \label{eq:model}
-  \begin{aligned}
-    \min_{\bm{x}} \quad & f(\bm{x}) = \sum_{i=1}^{n} w_i \left( x_i - \mu_i \right)^2 \\
-    \text{s.t.} \quad   & \bm{A}\bm{x} \leq \bm{b}, \\
-                        & x_i \geq 0, \quad i = 1, 2, \ldots, n.
-  \end{aligned}
+  \label{eq:wedge}
+  W_i=\Bigl\{P\in\mathbb{R}^2:\ \bigl|\angle(P-S_i)-\theta_i\bigr|\le\delta\Bigr\},
+  \qquad
+  L=\bigcap_{i=1}^{n}W_i ,
 \end{equation}
 
-\subsection{求解结果}
+其中 $\angle(\cdot)$ 表示向量的方位角，$L$ 称为\textbf{定位区域}。当 $n=2$ 时，
+$L$ 即题目附录 2 图 2 中的红色四边形；问题一要求将其推广到任意 $n$。
 
-算法迭代过程如图~\ref{fig:conv} 所示，目标函数值在第 8 次迭代后趋于稳定。
+记 $u_i^{\mathrm{lo}}$、$u_i^{\mathrm{hi}}$ 为方向 $\theta_i\mp\delta$ 的单位向量。
+由于楔形张角 $2\delta=2^\circ$ 远小于 $180^\circ$，$W_i$ 恰为两个半平面之交：
+
+\begin{equation}
+  \label{eq:halfplane}
+  W_i=\bigl\{P:\ u_i^{\mathrm{lo}}\times(P-S_i)\ge 0\bigr\}\cap
+      \bigl\{P:\ u_i^{\mathrm{hi}}\times(P-S_i)\le 0\bigr\},
+\end{equation}
+
+$\times$ 为二维叉积。于是 $n$ 次检测对应 $2n$ 个半平面，$L$ 为其交集。半平面是闭凸集，
+闭凸集之交仍为闭凸集，且每个半平面至多贡献一条边，故\textbf{$L$ 为凸多边形，
+边数至多 $2n$}。
+
+$2n$ 只是上界。若某检测点距干扰源较远、或其示向方向与已有约束相近，
+相应半平面即成为\textbf{冗余约束}——第 \ref{sec:p1num} 节的算例 C 用了 $5$ 个检测点，
+定位区域却只有 $6$ 个顶点，即 $4$ 个半平面冗余。可见\textbf{决定定位精度的是检测点的
+几何布置而非个数}，此结论直接指向问题二的选点策略。
+
+\subsubsection{直径的计算与算法}
+
+定位区域的直径定义为 $d=\max_{P,Q\in L}|PQ|$。固定 $P$ 时 $Q\mapsto|PQ|$ 为凸函数，
+凸函数在凸多边形上的最大值必在顶点取到；对 $P$ 再作同样论证，即得
+
+\begin{equation}
+  \label{eq:diam}
+  d=\max_{1\le a<b\le m}\lvert V_aV_b\rvert ,
+\end{equation}
+
+$V_1,\ldots,V_m$ 为 $L$ 的顶点。故只需枚举顶点对，无须考虑边上与内部的点。据此得算法 \ref{alg:diam}。
+
+\begin{algorithm}[H]
+\caption{定位区域与直径的计算}
+\label{alg:diam}
+\begin{algorithmic}[1]
+\Require 检测点 $S_i$ 与示向度 $\theta_i$（$i=1,\ldots,n$），误差半角 $\delta$
+\Ensure 定位区域顶点表 $V$，直径 $d$，直径点对 $(A,B)$
+\If{$\bigcap_{i=1}^{n}[\theta_i-\delta,\ \theta_i+\delta]\ne\varnothing$}
+  \State \Return “定位区域无界” \Comment{有界性判据，证明见附录 \ref{app:proof}}
+\EndIf
+\State $P\leftarrow$ 一个足够大的辅助方框 \Comment{数值脚手架，与目标区域无关}
+\For{$i=1$ \textbf{to} $n$}
+  \State $P\leftarrow\textsc{Clip}\bigl(P,\ \{X: u_i^{\mathrm{lo}}\times(X-S_i)\ge 0\}\bigr)$
+  \State $P\leftarrow\textsc{Clip}\bigl(P,\ \{X: u_i^{\mathrm{hi}}\times(X-S_i)\le 0\}\bigr)$
+  \If{$P=\varnothing$} \State \Return “读数矛盾，无可行定位区域” \EndIf
+\EndFor
+\State $V\leftarrow$ 去除 $P$ 中的重合点与共线冗余点
+\State 枚举顶点对求 $d$ 与 $(A,B)$，返回 $V,\ d,\ (A,B)$
+\end{algorithmic}
+\end{algorithm}
+
+\textsc{Clip} 为 Sutherland--Hodgman 半平面裁剪。第 4 行的辅助方框仅为使裁剪从有界多边形
+开始，本文取边长 $10R$，\textbf{与目标区域无关}；此处不宜用目标区域的外接正方形，
+否则定位区域跨出圆域时会被错误裁剪并切出并不存在的直边。
+
+\paragraph{复杂度与退化情形.}
+裁剪为 $O(nm)$，求直径为 $O(m^2)$，$m\le 2n$。实际 $n$ 不超过数十，代价可忽略；
+若 $n$ 极大可用旋转卡壳将求直径降至 $O(m)$。平面上凸集之交只有五种形态，
+构成完整分类，见表 \ref{tab:degenerate}。单点与线段虽为测度零事件，
+但直径均有定义，算法照常计算而不作特例跳过。
+
+\begin{table}[H]
+  \centering
+  \caption{定位区域的五种形态及其处理}
+  \label{tab:degenerate}
+  \begin{tabular}{lll}
+    \toprule
+    形态 & 判定 & 直径与处理 \\
+    \midrule
+    空 & 裁剪后无顶点 & 无定义；读数矛盾，检出并报错 \\
+    无界 & 各示向度区间之交非空（含 $n=1$） & $+\infty$；报无界并提示增大基线 \\
+    单点 / 线段 & 约束恰好相切 / 共线 & $0$ / 线段长；照常计算 \\
+    多边形 & 一般情形 & 顶点对最大距离 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+无界并非算法失效，而是一个有物理意义的诊断。由于 $\theta_i$ 是 $S_i$ \emph{指向} $G$ 的
+方位角，$\theta_1-\theta_2$ 恰等于 $G$ 处的交会角 $\varphi$，故 $n=2$ 时
+
+\begin{equation}
+  \label{eq:unbounded2}
+  L\ \text{无界}\iff|\theta_1-\theta_2|\le2\delta\iff\varphi\le2\delta=2^\circ .
+\end{equation}
+
+即两次检测的方向分辨率不足以区分，第二次检测未提供任何新的方向信息。
+此时正确的应对是\textbf{增大基线后重测}，而非继续解算。当两检测点到干扰源距离相近且间距 $b$ 远小于该距离 $r$ 时 $\varphi\approx b/r$，
+故千米量级上两检测点相距不足 $35$ 米即会触发；
+该情形在问题三、四中机器狗边走边测时并不罕见。条件 $\varphi>2\delta$ 亦构成问题二中
+第二检测点候选区域的必要约束。
+
+\subsubsection{覆盖圆问题}
+\label{sec:cover}
+
+设直径由顶点对 $(A,B)$ 达到。由泰勒斯定理，顶点 $V$ 位于以 $AB$ 为直径的圆内或圆上
+当且仅当 $\angle AVB\ge 90^\circ$，写成内积形式即得判据
+
+\begin{equation}
+  \label{eq:criterion}
+  \text{该圆覆盖 }L\iff (A-V)\cdot(B-V)\le 0,\quad \forall V\in V(L).
+\end{equation}
+
+判据只需一次点积，无须反三角函数，且返回的越界顶点即反例点。\footnote{题目将“定位区域直径”
+定义为一个数值，故“以定位区域直径为直径的圆”亦可理解为“直径等于该数值、位置任意的圆”。
+两种理解等价：因任何覆盖 $L$ 的半径 $r$ 的圆满足 $d\le 2r$，故 $R_{\min}\ge d/2$ 恒成立；
+若存在直径为 $d$ 的覆盖圆则 $R_{\min}=d/2$，此时 $A,B$ 距离恰等于该圆直径，
+只能是某条直径的两端，圆心必为 $AB$ 中点。}
+
+\paragraph{答案：一般不能.}
+对一般平面凸集，等边三角形即为反例（直径 $1$，最小覆盖圆半径 $1/\sqrt3>0.5$）。
+但定位区域是楔形之交这一特殊类型，故需针对本问单独证明。下述定理给出一个可完全解析求解的构型。
+
+\begin{theorem}[三点均布构型的解析反例]
+\label{thm:counter}
+设三个检测点位于以干扰源 $G$ 为圆心、半径 $\rho>0$ 的圆周上且互成 $120^\circ$，
+示向度均无误差，楔形半角 $\delta\in(0^\circ,15^\circ]$。记
+\begin{equation}
+  \label{eq:r1r2}
+  h=\rho\sin\delta,\quad
+  r_1=\frac{h}{\cos(30^\circ-\delta)},\quad
+  r_2=\frac{h}{\cos(30^\circ+\delta)},\quad
+  s=\frac{r_2-r_1}{2}>0 .
+\end{equation}
+则有：
+\begin{enumerate}[label=(\alph*)]
+  \item $L$ 为等边六边形，顶点方向相隔 $60^\circ$、到 $G$ 的距离在 $r_1$ 与 $r_2$ 间交替，
+        故 $L$ 只具 $3$ 次旋转对称性，\textbf{并非正六边形}；
+  \item 直径 $d=r_1+r_2$ 由一对对径顶点取到，且以 $AB$ 为直径的圆\textbf{不能}覆盖 $L$，
+        最大超出量 $E=\sqrt{r_2^2+r_2s+s^2}-(r_2-s)>0$；
+  \item 该构型的覆盖比为 $R_{\min}/(d/2)=1+\tan\delta/\sqrt3$，
+        在 $\delta=15^\circ$ 处恰等于 $2/\sqrt3$，即\textbf{精确达到 Jung 界}。
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\textbf{(1) 六条边界线同切于一圆。} $W_k$ 的两条边界射线过 $S_k$、与 $S_kG$ 方向成
+$\pm\delta$ 角，故 $G$ 到每条边界线的距离均为 $|S_kG|\sin\delta=\rho\sin\delta=h$。
+
+\textbf{(2) 法向夹角交替。} 设 $S_k$ 方位角为 $\alpha_k=\alpha_0+120^\circ k$，
+直接计算得 $W_k$ 两条边界线的外法向角为 $\alpha_k\mp(90^\circ-\delta)$。
+六个法向角排序后，相邻之差\textbf{交替}为 $60^\circ-2\delta$ 与 $60^\circ+2\delta$，
+故 $L$ 只具 $3$ 次旋转对称性——这正是 $L$ 非正六边形的根源。
+
+\textbf{(3) 顶点半径。} 两条距 $G$ 为 $h$、外法向夹角为 $\Delta$ 的切线，其交点位于两法向的
+角平分线上；设该点距 $G$ 为 $t$，则法向投影给出 $t\cos(\Delta/2)=h$，即 $t=h/\cos(\Delta/2)$。
+代入 $\Delta=60^\circ\mp2\delta$ 即得式 \eqref{eq:r1r2} 的 $r_1$、$r_2$，且顶点方向相隔
+$60^\circ$、半径交替。由 $0<\delta<30^\circ$ 得 $\cos(30^\circ+\delta)<\cos(30^\circ-\delta)$，
+故 $r_2>r_1$，$s>0$，(a) 得证。
+
+\textbf{(4) 直径由对径顶点对取到。} 顶点方向均布且半径交替，故对径顶点半径必不相同，
+距离为 $r_1+r_2$；与其余顶点对比较可知，$\delta\in(0^\circ,15^\circ]$ 时该距离最大
+（比较过程见附录 \ref{app:proof}），故 $d=r_1+r_2$。
+
+\textbf{(5) 覆盖判定。} 设 $A$（半径 $r_2$，方向 $\psi$）与 $B$（半径 $r_1$，方向
+$\psi+180^\circ$）为直径点对，则圆心 $C=s\hat\psi$、半径 $R=(r_1+r_2)/2=r_2-s$。
+取方向 $\psi+120^\circ$、半径 $r_2$ 的顶点 $V$，由余弦定理
+$|VC|^2=r_2^2+s^2-2r_2s\cos120^\circ=r_2^2+r_2s+s^2$，故
+
+\begin{equation}
+  \label{eq:key}
+  |VC|^2-R^2=\bigl(r_2^2+r_2s+s^2\bigr)-\bigl(r_2-s\bigr)^2=3r_2s
+  =\frac{3\rho^2\sin^3\delta}{2\cos^2(30^\circ+\delta)\cos(30^\circ-\delta)}>0 ,
+\end{equation}
+
+即 $V$ 严格落在圆外，(b) 得证。(c) 的推导见附录 \ref{app:proof}。
+\end{proof}
+
+式 \eqref{eq:key} 是\textbf{精确代数恒等式}，其符号不依赖任何数值计算。
+该定理另有两点值得注意：其一，结论\textbf{与 $\rho$ 无关}，即检测点距离多远都同样失效，
+并非刻意构造的特例；其二，由 \eqref{eq:key} 知 $E$ 随 $s$ 单调，而 $\delta\to0$ 时
+$r_1\to r_2$、$s\to0$、$E\to0$——此时楔形退化为等宽条带、六边形成为正六边形、
+直径圆恰为其外接圆，故\textbf{正六边形恰是“能覆盖”的临界情形，是楔形的锥度把它推过了
+临界线}。图 \ref{fig:excess} 给出 $E$ 随 $\delta$ 的变化。
 
 \begin{figure}[H]
   \centering
   \begin{tikzpicture}
     \begin{axis}[
-      width=0.8\linewidth, height=6cm,
-      xlabel={迭代次数}, ylabel={目标函数值 $f(\bm{x})$},
-      grid=major,
-      legend pos=north east,
-      tick label style={font=\small},
-      label style={font=\small},
+      width=0.62\linewidth, height=4.6cm,
+      xlabel={楔形半角 $\delta$ / 度}, ylabel={超出量 $E$ / 米},
+      xmin=0, xmax=2.2, ymin=0, ymax=1.2,
+      grid=major, tick label style={font=\scriptsize}, label style={font=\small},
+      legend style={font=\scriptsize, at={(0.03,0.97)}, anchor=north west, draw=black!30},
     ]
-      % 占位数据写在这里, 只为让空模板能编译。
-      % 赛时删掉下面一行, 换成从 results/ 读真实数据:
-      %   \addplot table [x=迭代次数, y=目标函数值, col sep=comma]
-      %     {../results/问题一收敛曲线.csv};
-      \addplot[thick, mark=*, mark size=1.4pt] coordinates {
-        (0,120.5) (1,88.3) (2,64.1) (3,49.7) (4,41.2) (5,36.8)
-        (6,34.5) (7,33.4) (8,32.9) (9,32.7) (10,32.6)
-      };
-      \legend{遗传算法}
+      % 由 E = sqrt(r2^2+r2*s+s^2)-(r2-s) 解析式计算, rho=900 米
+      \addplot[thick, blue!70!black, domain=0.001:2.2, samples=120] {
+        sqrt( (900*sin(x)/cos(30+x))^2
+            + (900*sin(x)/cos(30+x))*((900*sin(x)/cos(30+x)-900*sin(x)/cos(30-x))/2)
+            + ((900*sin(x)/cos(30+x)-900*sin(x)/cos(30-x))/2)^2 )
+        - ( 900*sin(x)/cos(30+x) - (900*sin(x)/cos(30+x)-900*sin(x)/cos(30-x))/2 ) };
+      \addlegendentry{$\rho=900$ 米}
+      \addplot[only marks, mark=*, mark size=1.8pt, red] coordinates {(1,0.2749)};
+      \addlegendentry{本题 $\delta=1^\circ$}
     \end{axis}
   \end{tikzpicture}
-  \caption{目标函数收敛曲线}
-  \label{fig:conv}
+  \caption{超出量 $E$ 随楔形半角 $\delta$ 的变化。$\delta\to0$ 时 $E\to0$，
+           即正六边形是覆盖与否的临界情形；本题 $\delta=1^\circ$ 处 $E=0.2749$ 米}
+  \label{fig:excess}
 \end{figure}
 
-各模型的对比结果见表~\ref{tab:compare}。
+$n=2$ 亦可失效，机理相同：楔形两边界射线以 $2\delta$ 发散，两检测点等距且误差对称时
+锥度抵消、四边形退化为平行四边形而恰好被覆盖，一旦对称性被破坏即可能越界。
+第 \ref{sec:p1num} 节的算例 A 即为一例。
+
+\paragraph{保证覆盖所需的半径与清除判据.}
+由 Jung 定理\cite{jung}，平面上直径为 $d$ 的点集必可被半径 $d/\sqrt3$ 的圆覆盖，
+等边三角形取等号，故
+
+\begin{equation}
+  \label{eq:jung}
+  \frac{d}{2}\ \le\ R_{\min}\ \le\ \frac{d}{\sqrt3}\approx 0.577\,d .
+\end{equation}
+
+题目规定光学探测仪须在距干扰源 $20$ 米内方可清除。若要求\textbf{站在单一位置一次完成清除}
+且保证成功，则定位区域须整体落入半径 $20$ 米的圆内，故准确判据为 $R_{\min}\le 20$ 米
+（站位取最小覆盖圆圆心）；由式 \eqref{eq:jung}，$d\le 20\sqrt3\approx34.6$ 米是便于使用的
+\textbf{充分条件}，而 $d\le 40$ \textbf{并不充分}。另一方面，$\pm1^\circ$ 误差在距离 $r$ 处的
+横向不确定度全宽为 $2r\tan1^\circ$，$r=1000$ 米时即达 $34.91$ 米，与上述阈值相当。
+这说明\textbf{千米量级上一次交会的精度恰处于“够与不够”的临界}，
+问题三、四必须采用“先粗定位、逼近后补测”的策略。
+
+那么“逼近”到什么程度才够？下述定理给出定量答案，它同时也是问题三、四中
+“确保所有干扰源被清除”这一要求的可行性依据。
+
+\begin{theorem}[可清除性保证]
+\label{thm:clearable}
+设机器狗已接收到干扰源 $G$ 的信号。若其在距 $G$ 均不超过 $\ell$ 的两处取检测点、
+且二者相对 $G$ 的张角为 $90^\circ$，则所得定位区域满足
+\begin{equation}
+  \label{eq:clearbound}
+  R_{\min}\ \le\ \frac{\sqrt2\,\ell\sin\delta}{1-2\sqrt2\sin\delta}.
+\end{equation}
+于是只要
+\begin{equation}
+  \label{eq:ellstar}
+  \ell\ \le\ \ell^{*}=\frac{20\,(1-2\sqrt2\sin\delta)}{\sqrt2\sin\delta}\approx 770\ \text{米}
+  \qquad(\delta=1^\circ),
+\end{equation}
+即有 $R_{\min}\le20$ 米，机器狗在最小覆盖圆圆心处一次清除必定成功。
+\end{theorem}
+
+\begin{proof}
+记 $d$ 为定位区域 $L$ 的直径，两检测点距 $G$ 分别为 $r_1,r_2\le\ell$。
+对任意 $P\in L\subseteq W_i$，$P-S_i$ 与中心射线方向的夹角不超过 $\delta$，
+故 $P$ 到该射线的垂距不超过 $|P-S_i|\sin\delta$；又 $G\in L$，
+故 $|P-S_i|\le|P-G|+|G-S_i|\le d+r_i$。于是 $L$ 含于以中心射线为轴、
+半宽 $h_i=(d+r_i)\sin\delta$ 的条带内。两条中心射线的夹角等于张角 $90^\circ$，
+故 $L$ 含于半宽为 $h_1,h_2$ 的矩形之内，该矩形的外接圆半径与直径分别为
+$\sqrt{h_1^2+h_2^2}$ 与 $2\sqrt{h_1^2+h_2^2}$。由 $h_i\le(d+\ell)\sin\delta$ 得
+\[
+  d\le 2\sqrt2\,(d+\ell)\sin\delta
+  \ \Longrightarrow\
+  d\le\frac{2\sqrt2\,\ell\sin\delta}{1-2\sqrt2\sin\delta},
+\]
+代回 $R_{\min}\le\sqrt{h_1^2+h_2^2}\le\sqrt2\,(d+\ell)\sin\delta$ 即得式 \eqref{eq:clearbound}。
+\end{proof}
+
+定理 \ref{thm:clearable} 的意义在于 $\ell^{*}\approx770$ 米\textbf{小于有效接收半径的下界
+$1000$ 米}：机器狗总能移动到距干扰源 $770$ 米以内，且在该处必定仍能接收到信号，
+因而上述两次检测总可执行。当 $G$ 接近目标区域边界时，所需检测位置可能落在
+半径 $1800$ 米的圆域之外——题目附件 2 第 1.1 节明确允许机器狗提交目标区域外的位置，
+故结论对边界附近的干扰源同样成立。此外，式 \eqref{eq:clearbound} 中的界是保守的：
+$\ell=770$ 米时实测 $R_{\min}=19.0$ 米，约为上界的 $95\%$；
+且张角在 $60^\circ\sim120^\circ$ 范围内、$\ell=500$ 米时 $R_{\min}$ 均不超过 $17.5$ 米，
+故实际执行时无须精确取到 $90^\circ$。
+
+\subsubsection{数值算例与结果}
+\label{sec:p1num}
+
+题目未提供问题一的数据，本文自行构造三组算例，生成脚本固定随机种子 $20260910$，
+可完全复现。各检测点距干扰源均超过 $5$ 米（否则按附录 2 第 9 条信号过强而无示向度），
+且互不重合（否则按假设 (2) 须共用同一误差）。求解结果见表 \ref{tab:p1result}。
 
 \begin{table}[H]
   \centering
-  \caption{不同模型的求解结果对比}
-  \label{tab:compare}
-  \begin{tabular}{lcc}
+  \caption{三组算例的设置与求解结果}
+  \label{tab:p1result}
+  \begin{tabular}{clcccccc}
     \toprule
-    模型     & 均方误差 & 运行时间/s \\
+    算例 & 布置 & $n$ & $m$ & $d$/米 & $R_{\min}$/米 & 圆能否覆盖 & 超出量 $E$/米 \\
     \midrule
-    线性回归 & 12.4 & 0.03  \\
-    随机森林 & 8.1  & 1.72  \\
-    遗传算法 & 6.7  & 15.40 \\
+    A & 交会角 $90^\circ$，两点各距源 $1000$ 米 & 2 & 4 & 49.3796 & 24.6900 & 否 & 0.0874 \\
+    B & 三点均布 $120^\circ$，误差取零 & 3 & 6 & 36.2834 & 18.3245 & 否 & 0.2749 \\
+    C & 五点随机布置 & 5 & 6 & 27.7060 & 13.8530 & 是 & 0 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\section{模型的检验与灵敏度分析}
+算例 A 的检测点布置是预先设定的，两个误差 $-0.9864^\circ$ 与 $+0.8110^\circ$ 由固定
+随机种子下的均匀分布生成、\textbf{未针对覆盖判定作任何挑选}，其定位区域仍有一个顶点
+超出圆 $0.0874$ 米，判据侧亦有 $(A-V)\cdot(B-V)=+4.324>0$。算例 B 是定理 \ref{thm:counter}
+在 $\rho=900$ 米、$\delta=1^\circ$ 处的实例，其定位区域如图 \ref{fig:caseB}；
+六条边等长（均 $18.1444$ 米）但外接半径在两值间交替，仅具 $3$ 次旋转对称性，
+为\textbf{等边而非正}的六边形，正是定理 \ref{thm:counter} 的结论。算例 C 表明
+覆盖失败并非必然。三组算例的定位区域均包含干扰源真实位置，与假设 (1) 一致。
 
-对关键参数在 $\pm 10\%$ 范围内扰动，结果表明目标函数值变化不超过 $3\%$，模型稳健。
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      width=0.62\linewidth, height=6cm,
+      axis equal image,
+      xlabel={$x$ / 米}, ylabel={$y$ / 米},
+      xmin=-26, xmax=26, ymin=-26, ymax=26,
+      grid=major,
+      legend style={font=\scriptsize, at={(1.03,0.5)}, anchor=west, draw=black!30},
+      tick label style={font=\scriptsize}, label style={font=\small},
+    ]
+      \addplot[thick, draw=blue!70!black, fill=blue!12]
+        table [x=x, y=y, col sep=comma] {\datadir/问题一_算例B_定位区域.csv};
+      \addlegendentry{定位区域}
+      % 圆心与半径取自 results/问题一_求解汇总.csv
+      \addplot[red, thick, domain=0:360, samples=181, smooth]
+        ({0.1583+18.1417*cos(x)}, {-0.0914+18.1417*sin(x)});
+      \addlegendentry{以直径为直径的圆}
+      \addplot[green!50!black, thick, dotted, domain=0:360, samples=181, smooth]
+        ({18.3245*cos(x)}, {18.3245*sin(x)});
+      \addlegendentry{最小覆盖圆}
+      \addplot[red, thick, mark=*, mark size=1.4pt]
+        coordinates {(15.869,-9.162) (-15.553,8.979)};
+      \addlegendentry{直径 $AB$}
+      \addplot[only marks, mark=*, mark size=2.6pt, orange] coordinates {(0,18.3245)};
+      \addlegendentry{落在圆外的顶点}
+    \end{axis}
+  \end{tikzpicture}
+  \caption{算例 B 的定位区域与两个圆。两圆半径相差仅 $0.18$ 米、图中几乎重合，
+           顶部顶点超出以直径为直径的圆 $0.2749$ 米，具体数值见表 \ref{tab:p1result}}
+  \label{fig:caseB}
+\end{figure}
+
+\subsubsection{模型检验}
+\label{sec:p1check}
+
+问题一不存在可供比对的标准答案，故以\textbf{题目给出的定义本身作为判据}，
+从三个层次检验算法实现，各层均\textbf{不调用被检验的代码}，以免同一处错误被两侧同时继承。
+其一，在检测点周边随机取 $2\times10^5$ 点，比对“依定义由方位角判定”与“依式
+\eqref{eq:halfplane} 的不等式判定”；其二，按内法向形式独立推导半平面，
+交由 Qhull 算法\cite{qhull}求交，与本文所得顶点逐一配对；其三，在以定位区域为中心、
+半宽为其直径三倍的方框内均匀采样 $4\times10^5$ 点，比对“依式 \eqref{eq:wedge} 判定”与
+“依所求多边形判定”。三组算例中，第一、三层均无分歧，第二层顶点最大偏差不超过
+$2.3\times10^{-12}$ 米。此外采用\textbf{变异测试}向算法注入半角取值错误、
+楔形顶点偏移等典型缺陷，各层检验均能检出，表明验证方案确具检错能力。
+
+定理 \ref{thm:counter} 为算法提供了独立于数值计算的校验基准。将 $\rho=900$ 米、
+$\delta=1^\circ$ 代入式 \eqref{eq:r1r2}，解析值与算法数值解在有效数字范围内完全一致：
+
+\begin{table}[H]
+  \centering
+  \caption{算例 B 的解析值与数值解对照}
+  \label{tab:caseBcheck}
+  \begin{tabular}{lcccc}
+    \toprule
+     & $r_1$/米 & $r_2$/米 & $d$/米 & 超出量 $E$/米 \\
+    \midrule
+    解析值   & 17.958851905 & 18.324504190 & 36.283356095 & 0.274919837 \\
+    数值解   & 17.958851905 & 18.324504190 & 36.283356095 & 0.274919837 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+该算例坐标量级约 $18$ 米，双精度浮点绝对误差约 $4\times10^{-15}$ 米，
+与超出量 $0.2749$ 米相差 $13$ 个数量级，可排除数值误差导致覆盖判定失误的可能。
+
+\paragraph{对假设的灵敏度.}
+均匀分布假设 (5) 仅用于生成算例。本节全部结论——包括定位区域的定义与结构、直径与覆盖判据、
+定理 \ref{thm:counter} 与 \ref{thm:clearable}、表 \ref{tab:degenerate} 的形态分类——
+\textbf{只依赖确界 $|\varepsilon_i|\le\delta$，与误差的分布形态及相关结构无关}。这是集员估计相较于
+最小二乘、卡尔曼滤波等方法的固有优势：题目仅给出误差上界时，前者无须额外分布假设
+即可给出严格的包含性结论。
+
+作为补充，本文以干扰源置于原点、$n$ 个检测点距其 $300\sim1200$ 米、方位与误差均匀随机的
+方式各扫描 $4000$ 组配置，考察比值 $R_{\min}/(d/2)$ 的上确界：$n=2$ 时为 $1.0005$
+（覆盖失败率 $1.0\%$），$n=3$ 时为 $1.1308$（$17.2\%$），$n=4$ 时为 $1.1383$（$26.4\%$），
+后者已达 Jung 界的 $98.6\%$。该结果为数值扫描所得，不构成证明，
+但与定理 \ref{thm:counter}(c) 中“Jung 界可被楔形之交精确取到”的解析结论相互印证。
+
+\subsection{问题二：第二个检测点的选择策略}
+
+% TODO: 待完成。含 5.2.1 模型建立、5.2.2 求解结果、5.2.3 模型检验。
+
+\subsection{问题三：全向干扰源的自动搜索定位与清除策略}
+
+% TODO: 待完成。含 5.3.1 模型建立、5.3.2 算法设计、5.3.3 演练与正式测试结果、5.3.4 模型检验。
+
+\subsection{问题四：含定向干扰源时的检测与清除策略}
+
+% TODO: 待完成。含 5.4.1 模型建立、5.4.2 算法设计、5.4.3 测试结果、5.4.4 模型检验。
 
 \section{模型的评价与推广}
 
 \subsection{模型的优点}
+
 \begin{enumerate}[label=(\arabic*)]
-  \item 优点一。
-  \item 优点二。
+  \item \textbf{与题目的误差信息形式相匹配。} 题目给出的是误差确界而非分布，
+        且明确指出同一地点重复检测不改变误差。本文采用的集员估计方法只依赖确界，
+        所得定位区域是严格包含真实位置的集合，不需要任何分布假设。
+  \item \textbf{算法结构简单且退化情形完备。} 楔形化为半平面之交后，
+        任意 $n$ 的处理方式统一；表 \ref{tab:degenerate} 给出了五种形态的完整分类，
+        并对空集与无界情形给出明确的检出机制，不会输出没有实际意义的结果。
+  \item \textbf{结论经独立方法交叉验证。} 第 \ref{sec:p1check} 节的三层检验均不调用被检验代码，
+        且经变异测试确认其检错能力。
 \end{enumerate}
 
 \subsection{模型的缺点}
+
 \begin{enumerate}[label=(\arabic*)]
-  \item 缺点一。
+  \item 集员估计给出的是包含真实位置的区域，\textbf{不提供区域内的概率分布}。
+        若后续需要按概率加权决策，需另行引入分布假设。
+  \item 本文未将“干扰源必位于目标区域内”这一先验并入定位区域。
+        引入该先验可进一步收紧区域，但当干扰源接近目标区域边界时会产生圆弧边，
+        使定位区域不再是多边形，与题目“多边形定位区域”的措辞不符。
+        经测算，此情形仅出现于最外约 $2\%$ 的面积范围内，且对直径的影响在厘米量级，
+        故本文选择不作收紧，所得直径是偏保守的上界。
 \end{enumerate}
+
+\subsection{模型的推广}
+
+问题一建立的定位区域模型与直径算法可直接用于问题二至四：
+问题二中以定位区域直径作为选点优劣的度量；
+问题三、四中在每次新增检测后增量地更新定位区域，
+并以 $R_{\min}\le 20$ 米作为可实施清除的判据。
 
 % ==========================================================
 % AI 工具使用声明
@@ -222,26 +641,103 @@
 %   \CumcmAINotUsed          未使用任何 AI 工具
 %   \CumcmAIUsed{简要用途}    使用了 AI 工具, 需在支撑材料中附
 %                            「AI工具使用详情.pdf」
-%
-% 本项目使用 Claude Code 辅助, 故默认选用后者。若最终未使用则改为前者。
 % ==========================================================
-\CumcmAIUsed{代码调试与文档排版}
+\CumcmAIUsed{代码编写与调试、数值实验脚本、文档排版}
 
 \begin{thebibliography}{9}
-  \bibitem{ref1} 作者. 书名[M]. 出版地: 出版社, 2020.
-  \bibitem{ref2} 作者. 论文标题[J]. 期刊名, 2021, 卷(期): 起止页码.
+  \bibitem{jung} Jung H W E. Über die kleinste Kugel, die eine räumliche Figur einschließt[J].
+    Journal für die reine und angewandte Mathematik, 1901, 123: 241--257.
+  \bibitem{sh} Sutherland I E, Hodgman G W. Reentrant polygon clipping[J].
+    Communications of the ACM, 1974, 17(1): 32--42.
+  \bibitem{rockafellar} Rockafellar R T. Convex Analysis[M]. Princeton: Princeton University Press, 1970.
+  \bibitem{qhull} Barber C B, Dobkin D P, Huhdanpaa H. The quickhull algorithm for convex hulls[J].
+    ACM Transactions on Mathematical Software, 1996, 22(4): 469--483.
 \end{thebibliography}
 
 \begin{appendices}
 
+\section{问题一的定理证明}
+\label{app:proof}
+
+\paragraph{有界性判据.}
+$L\ne\varnothing$ 时，$L$ 有界当且仅当 $\bigcap_{i=1}^{n}[\theta_i-\delta,\theta_i+\delta]=\varnothing$
+（视作单位圆周上的弧）。事实上，对非空闭凸集族，交集的回收锥等于各回收锥之交，
+即 $\operatorname{recc}(L)=\bigcap_i\operatorname{recc}(W_i)$\cite{rockafellar}；
+楔形 $W_i$ 的回收锥恰为方向区间 $[\theta_i-\delta,\theta_i+\delta]$ 张成的锥。
+非空闭凸集有界当且仅当其回收锥仅含零向量，而诸锥之交仅含零向量当且仅当对应方向区间之交为空。
+该判据为 $O(n)$，且自动涵盖 $n=1$：单个区间与自身相交非空，直接判为无界。
+
+\paragraph{定理 \ref{thm:counter} 步骤 (4)：直径由对径顶点对取到.}
+六顶点方向相隔 $60^\circ$ 且半径交替，故对径顶点半径必不相同，其距离为 $r_1+r_2$。
+其余顶点对中，相隔 $120^\circ$ 的同半径对距离为 $\sqrt3\,r$（$r\le r_2$），
+相隔 $60^\circ$ 的异半径对距离为 $\sqrt{r_1^2+r_2^2-r_1r_2}<r_1+r_2$。
+而 $r_1+r_2>\sqrt3\,r_2$ 当且仅当 $r_1/r_2>\sqrt3-1$，即
+$\cos(30^\circ+\delta)/\cos(30^\circ-\delta)>\sqrt3-1$；在 $\delta=15^\circ$ 处取等号
+（此时 $\cos45^\circ/\cos15^\circ=\sqrt3-1$ 精确成立）。
+故对 $\delta\in(0^\circ,15^\circ]$ 有 $d=r_1+r_2$。
+
+\paragraph{定理 \ref{thm:counter}(c)：覆盖比的闭式.}
+三个半径为 $r_2$ 的顶点互成 $120^\circ$，构成以 $G$ 为外心、$r_2$ 为外接半径的正三角形，
+其最小覆盖圆即该外接圆；半径 $r_1<r_2$ 的三个顶点位于其内部，故 $R_{\min}=r_2$。
+利用和差化积 $\cos(30^\circ+\delta)+\cos(30^\circ-\delta)=\sqrt3\cos\delta$，得
+
+\[
+  \frac{R_{\min}}{d/2}=\frac{2r_2}{r_1+r_2}
+  =\frac{2\cos(30^\circ-\delta)}{\sqrt3\cos\delta}
+  =\frac{\sqrt3\cos\delta+\sin\delta}{\sqrt3\cos\delta}
+  =1+\frac{\tan\delta}{\sqrt3},\qquad \delta\in(0^\circ,15^\circ].
+\]
+
+代入 $\delta=15^\circ$ 并注意 $\tan15^\circ=2-\sqrt3$，即得比值 $2/\sqrt3$，
+恰为 Jung 界。故该界在“楔形之交”这一类区域内可以精确取到。
+本题 $\delta=1^\circ$ 时该对称构型的比值为 $1.0101$，为 Jung 界的 $87.5\%$。
+
 \section{核心代码}
 
-\begin{lstlisting}[language=Python, caption={模型求解主程序}]
-from pathlib import Path
-import pandas as pd
+\begin{lstlisting}[language=Python, caption={楔形化为半平面并求交（问题一）}]
+def 楔形半平面(S, theta_deg, delta_deg):
+    “”“顶点 S、中心方向 theta、半角 delta 的楔形，返回其两个半平面 (a, b, c)，
+    含义为 a*x + b*y <= c。”“”
+    lo = np.radians(theta_deg - delta_deg)
+    hi = np.radians(theta_deg + delta_deg)
+    u_lo = (np.cos(lo), np.sin(lo))
+    u_hi = (np.cos(hi), np.sin(hi))
+    h1 = (u_lo[1], -u_lo[0], u_lo[1] * S[0] - u_lo[0] * S[1])
+    h2 = (-u_hi[1], u_hi[0], -u_hi[1] * S[0] + u_hi[0] * S[1])
+    return [h1, h2]
 
-ROOT = Path(__file__).resolve().parents[1]
-df = pd.read_csv(ROOT / "data" / "processed" / "clean.csv")
+
+def 求定位区域(检测点, 示向度, delta_deg):
+    “”“n 个楔形取交，返回 (顶点表, 状态)。”“”
+    if not 角区间交为空(示向度, delta_deg):
+        return [], “无界”
+    多边形 = [(-BOX, -BOX), (BOX, -BOX), (BOX, BOX), (-BOX, BOX)]
+    for S, th in zip(检测点, 示向度):
+        for a, b, c in 楔形半平面(S, th, delta_deg):
+            多边形 = 裁剪(多边形, a, b, c)
+            if not 多边形:
+                return [], “空”
+    return 去冗余(多边形), “多边形”
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python, caption={直径与覆盖判定（问题一）}]
+def 求直径(顶点):
+    “”“凸多边形的直径必在顶点对取到（定理 2）。”“”
+    最大, 点对 = 0.0, None
+    for p, q in combinations(顶点, 2):
+        d = float(np.hypot(p[0] - q[0], p[1] - q[1]))
+        if d > 最大:
+            最大, 点对 = d, (p, q)
+    return 最大, 点对
+
+
+def 覆盖判定(顶点, A, B):
+    “”“泰勒斯判据：V 在圆内或圆上 <=> (A-V)·(B-V) <= 0。”“”
+    A, B = np.asarray(A), np.asarray(B)
+    for V in 顶点:
+        if float(np.dot(A - np.asarray(V), B - np.asarray(V))) > 1e-7:
+            return False
+    return True
 \end{lstlisting}
 
 \end{appendices}
