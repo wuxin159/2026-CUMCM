@@ -1,80 +1,52 @@
-% 2026 CUMCM 论文骨架
+% 2026 CUMCM 参赛论文
 %
-% 编译: xelatex main.tex  连续两遍 (VS Code 中直接 Ctrl+Alt+B)
-% 所有路径均相对本文件所在目录, 不要写绝对路径
+% 模板: latexstudio/CUMCMThesis (社区维护, 非官方出品)
+%       cumcmthesis.cls + cumcm2026.sty 已随仓库提交, 无需额外安装
+% 编译: xelatex 连续两遍, 或在项目根目录执行 .\build.ps1
 %
-% 注意: 此处不要加 "% !TeX program = xelatex" 魔法注释。
-% LaTeX Workshop 一旦读到它, 就会改用扩展内置的默认工具定义,
-% 绕过 .vscode/settings.json 里配置的编译方案, 结果是只编译一遍
-% (交叉引用永远是 ??) 且 -shell-escape 参数丢失。
+% 注意: 不要在此处加 "% !TeX program = xelatex" 魔法注释。
+% LaTeX Workshop 读到它会改用内置默认工具, 绕过 .vscode/settings.json
+% 里的编译方案, 结果只编译一遍, 交叉引用永远是 ??。
 
-\documentclass[12pt, a4paper]{article}
+% withoutpreface 去掉封面与编号专用页, 这是 2026 年电子版提交的要求。
+% 打印纸质版时改回 \documentclass{cumcmthesis} 以生成承诺书和编号页。
+\documentclass[withoutpreface, bwprint]{cumcmthesis}
 
-% ---------- 中文 ----------
-\usepackage[UTF8, scheme=plain]{ctex}
+\usepackage{cumcm2026}
 
-% ---------- 数学 ----------
-\usepackage{amsmath, amssymb, amsthm, bm}
-
-% ---------- 表格 ----------
-\usepackage{booktabs}      % 三线表
-\usepackage{multirow}
-\usepackage{longtable}
-\usepackage{array}
-
-% ---------- 图形 ----------
-\usepackage{graphicx}
+% ---------- 绘图 ----------
+% 技术路线: Python 只算不画, 结果写入 results/*.csv, 由 PGFPlots 读取绘制。
+% 这样图中字体与正文完全一致, 坐标轴标签可直接写 $\alpha_i$ 交给 LaTeX 排版。
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 \usetikzlibrary{arrows.meta, positioning, shapes.geometric}
-\graphicspath{{../figures/}}
 
-% 图形外部化: 图多到编译变慢时再打开这两行, 需编译参数带 -shell-escape
+% 类文件已把 graphicspath 设为 figures/ 等, 此处补上仓库根目录的 figures/
+\graphicspath{{../figures/}{figures/}}
+
+% 图形外部化: 图多到编译明显变慢时再启用, 编译参数需带 -shell-escape
 % \usepgfplotslibrary{external}
 % \tikzexternalize[prefix=../figures/cache/]
 
-% ---------- 版式 ----------
-\usepackage[a4paper, margin=2.5cm]{geometry}
-\usepackage{caption}
-\usepackage{subcaption}
-\usepackage{float}
-\usepackage{enumitem}
-\usepackage{xcolor}
-\usepackage{listings}
-\usepackage[hidelinks]{hyperref}
-
-\captionsetup[figure]{labelsep=quad, font=small}
-\captionsetup[table]{labelsep=quad, font=small}
-
-% ---------- 代码块 ----------
-\lstset{
-  basicstyle=\ttfamily\small,
-  breaklines=true,
-  frame=single,
-  numbers=left,
-  numberstyle=\tiny\color{gray},
-  keywordstyle=\color{blue!70!black},
-  commentstyle=\color{green!45!black},
-  stringstyle=\color{orange!80!black},
-}
-
-% ---------- 定理环境 ----------
-\newtheorem{assumption}{假设}
-\newtheorem{definition}{定义}
-
-\title{\textbf{基于 123 模型的 8888 问题研究}}
-\author{参赛队号：xxxxxxx}
-\date{\today}
+%===================================
+\title{基于 XXX 模型的 YYY 问题研究}
+\tihao{A}                    % 题号, 填 A/B/C/D/E
+\baominghao{xxxxxxxx}        % 报名号
+\schoolname{XX 大学}
+\membera{队员一}
+\memberb{队员二}
+\memberc{队员三}
+\supervisor{}                % 辅导老师
+\yearinput{2026}
+\monthinput{9}
+\dayinput{1}
+%===================================
 
 \begin{document}
 
 \maketitle
 
-% ==================== 摘要 ====================
-\begin{center}
-  \textbf{\large 摘\quad 要}
-\end{center}
-
+\begin{abstract}
 本文针对 XXX 问题，建立了 YYY 模型。
 
 针对问题一，首先对原始数据进行清洗与预处理，而后建立了 ZZZ 模型，
@@ -84,14 +56,16 @@
 
 针对问题三，$\cdots$
 
-最后，本文对模型进行了灵敏度分析，验证了模型的稳健性，并讨论了模型的优缺点与推广方向。
+最后，本文对模型进行了灵敏度分析，验证了模型的稳健性，
+并讨论了模型的优缺点与推广方向。
+\end{abstract}
 
-\vspace{1em}
-\noindent\textbf{关键词：}\quad 关键词一\quad 关键词二\quad 关键词三
+\keywords{关键词一\quad 关键词二\quad 关键词三}
+
+\tableofcontents
 
 \newpage
 
-% ==================== 正文 ====================
 \section{问题重述}
 
 \subsection{问题背景}
@@ -114,9 +88,10 @@
 \begin{figure}[H]
   \centering
   \begin{tikzpicture}[
-    node distance=1.4cm and 1.6cm,
+    node distance=1.4cm and 1.5cm,
     every node/.style={font=\small},
-    box/.style={draw, rounded corners, minimum width=2.4cm, minimum height=0.9cm, align=center},
+    box/.style={draw, rounded corners, minimum width=2.3cm,
+                minimum height=0.85cm, align=center},
     arrow/.style={-{Stealth[length=2.5mm]}, thick},
   ]
     \node[box] (data)  {数据预处理};
@@ -136,13 +111,10 @@
 
 \section{模型假设}
 
-\begin{assumption}
-  假设一的内容。
-\end{assumption}
-
-\begin{assumption}
-  假设二的内容。
-\end{assumption}
+\begin{enumerate}[label=(\arabic*)]
+  \item 假设一的内容。
+  \item 假设二的内容。
+\end{enumerate}
 
 \section{符号说明}
 
@@ -154,10 +126,10 @@
     \toprule
     符号 & 含义 \\
     \midrule
-    $x_i$        & 第 $i$ 个决策变量 \\
-    $w_i$        & 第 $i$ 项指标的权重 \\
-    $\bm{A}$     & 约束系数矩阵 \\
-    $f(\bm{x})$  & 目标函数 \\
+    $x_i$       & 第 $i$ 个决策变量 \\
+    $w_i$       & 第 $i$ 项指标的权重 \\
+    $\bm{A}$    & 约束系数矩阵 \\
+    $f(\bm{x})$ & 目标函数 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -192,7 +164,8 @@
       tick label style={font=\small},
       label style={font=\small},
     ]
-      \addplot[thick, mark=*, mark size=1.4pt] table [x=iter, y=obj, col sep=comma] {../results/convergence.csv};
+      \addplot[thick, mark=*, mark size=1.4pt]
+        table [x=iter, y=obj, col sep=comma] {../results/convergence.csv};
       \legend{遗传算法}
     \end{axis}
   \end{tikzpicture}
@@ -234,14 +207,28 @@
   \item 缺点一。
 \end{enumerate}
 
+% ==========================================================
+% AI 工具使用声明
+%
+% 官方《人工智能工具使用规定（2026 年试行）》要求本声明置于参考文献之前，
+% 下面两条命令二选一，不可省略:
+%
+%   \CumcmAINotUsed          未使用任何 AI 工具
+%   \CumcmAIUsed{简要用途}    使用了 AI 工具, 需在支撑材料中附
+%                            「AI工具使用详情.pdf」
+%
+% 本项目使用 Claude Code 辅助, 故默认选用后者。若最终未使用则改为前者。
+% ==========================================================
+\CumcmAIUsed{代码调试与文档排版}
+
 \begin{thebibliography}{9}
   \bibitem{ref1} 作者. 书名[M]. 出版地: 出版社, 2020.
   \bibitem{ref2} 作者. 论文标题[J]. 期刊名, 2021, 卷(期): 起止页码.
 \end{thebibliography}
 
-\newpage
-\appendix
-\section{附录：核心代码}
+\begin{appendices}
+
+\section{核心代码}
 
 \begin{lstlisting}[language=Python, caption={模型求解主程序}]
 from pathlib import Path
@@ -250,5 +237,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 df = pd.read_csv(ROOT / "data" / "processed" / "clean.csv")
 \end{lstlisting}
+
+\end{appendices}
 
 \end{document}

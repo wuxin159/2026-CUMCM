@@ -110,6 +110,43 @@ xelatex -synctex=1 -interaction=nonstopmode -shell-escape main.tex
 | 源码跳到 PDF 对应位置 | `Ctrl+Alt+J` |
 | PDF 跳回源码 | 在 PDF 上 `Ctrl+左键` |
 
+## 论文模板
+
+`paper/` 使用 [latexstudio/CUMCMThesis](https://github.com/latexstudio/CUMCMThesis) 模板，
+由 LaTeX 工作室社区维护，**并非竞赛官方出品**。官方只发布《论文格式规范》文字规定，
+不提供任何 LaTeX 模板。该模板 2026 年 8 月更新，已适配当年格式要求。
+
+`cumcmthesis.cls` 与 `cumcm2026.sty` 已随仓库提交，clone 下来即可编译，无需另行安装。
+模板自带的使用手册放在 `paper/reference/`，比赛断网时可离线查阅。
+
+文档类选项按提交方式切换：
+
+| 用途 | 写法 |
+| ---- | ---- |
+| 电子版提交 | `\documentclass[withoutpreface, bwprint]{cumcmthesis}` |
+| 打印纸质版 | `\documentclass{cumcmthesis}`，会生成承诺书与编号专用页 |
+
+## AI 工具使用声明（2026 年硬性要求）
+
+官方《人工智能工具使用规定（2026 年试行）》要求所有参赛队在**参考文献之前**
+设置「AI 工具使用声明」，两者必选其一，不可省略。模板已封装成命令：
+
+| 情况 | 命令 |
+| ---- | ---- |
+| 未使用 AI | `\CumcmAINotUsed` |
+| 使用了 AI | `\CumcmAIUsed{简要用途}` |
+
+使用了 AI 的队伍还必须在支撑材料中提交一份 PDF，文件名规定为
+「AI工具使用详情.pdf」，内容包含四项：
+
+1. 所用 AI 工具名称、版本或型号
+2. 具体使用目的和环节
+3. 主要提示方式与使用过程说明，可附典型交互示例
+4. 对 AI 输出的采纳、人工修改和核验的主要情况，语言润色除外
+
+规定同时要求核心建模与分析由参赛队主导，并对 AI 参与的内容逐项人工审查核实。
+故意隐瞒或作虚假声明按违反竞赛规则处理。
+
 ## 分工
 
 | 角色 | 成员 | 主要职责 |
@@ -120,8 +157,10 @@ xelatex -synctex=1 -interaction=nonstopmode -shell-escape main.tex
 
 ## 环境
 
-- **Python 3.x**：`numpy`、`pandas`、`scipy`、`matplotlib`、`scikit-learn` 等，依赖统一记录在 `requirements.txt`
-- **LaTeX**：推荐 TeX Live，使用 CUMCM 官方格式模板（如 `cumcmthesis`），中文文档用 `xelatex` 编译
+- **Python 3.x**：`numpy`、`pandas`、`scipy`、`scikit-learn` 等，依赖统一记录在 `requirements.txt`。
+  `matplotlib` 仅用于 notebook 里快速查看数据，论文成图一律交给 PGFPlots，见下节
+- **LaTeX**：推荐 TeX Live，中文文档用 `xelatex` 编译。论文模板见「论文模板」一节，
+  注意官方并不提供 LaTeX 模板
 
 各机器的安装位置可以不同，但需保证 `python` 与 `xelatex` 均已加入系统 `PATH`。
 
