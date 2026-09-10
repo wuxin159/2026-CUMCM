@@ -1,7 +1,12 @@
-% !TeX program = xelatex
 % 2026 CUMCM 论文骨架
-% 编译: xelatex main.tex   (VS Code 中直接 Ctrl+Alt+B)
+%
+% 编译: xelatex main.tex  连续两遍 (VS Code 中直接 Ctrl+Alt+B)
 % 所有路径均相对本文件所在目录, 不要写绝对路径
+%
+% 注意: 此处不要加 "% !TeX program = xelatex" 魔法注释。
+% LaTeX Workshop 一旦读到它, 就会改用扩展内置的默认工具定义,
+% 绕过 .vscode/settings.json 里配置的编译方案, 结果是只编译一遍
+% (交叉引用永远是 ??) 且 -shell-escape 参数丢失。
 
 \documentclass[12pt, a4paper]{article}
 
@@ -57,7 +62,7 @@
 \newtheorem{assumption}{假设}
 \newtheorem{definition}{定义}
 
-\title{\textbf{基于 XXX 模型的 YYY 问题研究}}
+\title{\textbf{基于 123 模型的 YYY 问题研究}}
 \author{参赛队号：xxxxxxx}
 \date{\today}
 

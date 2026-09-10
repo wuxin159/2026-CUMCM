@@ -40,12 +40,6 @@
   // 保存即编译
   "latex-workshop.latex.autoBuild.run": "onSave",
 
-  // 强制使用上面定义的 recipe。
-  // 否则 main.tex 顶部的 "% !TeX program = xelatex" 魔法注释会让扩展
-  // 绕过 recipe 直接调 xelatex, 结果只编译一遍, 交叉引用永远是 ??,
-  // 而且 -shell-escape 参数会丢失。
-  "latex-workshop.latex.build.forceRecipeUsage": true,
-
   // 编译后清理中间文件。
   // 注意: 清理列表里绝不能放 *.synctex.gz, 那是正反向跳转的索引,
   // 删掉之后 Ctrl+左键 和 Ctrl+Alt+J 都会失效。
