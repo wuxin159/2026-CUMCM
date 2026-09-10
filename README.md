@@ -111,11 +111,9 @@ xelatex -synctex=1 -interaction=nonstopmode -shell-escape main.tex
 | 源码跳到 PDF 对应位置 | `Ctrl+Alt+J` |
 | PDF 跳回源码 | 在 PDF 上 `Ctrl+左键` |
 
-## 命名与作图
+## 作图
 
-### 命名规则
-
-脚本、数据、图表全部用中文命名，让文件名本身说清它算什么、画什么。
+### 命名
 
 | 位置 | 示例 |
 | ---- | ---- |
@@ -123,35 +121,62 @@ xelatex -synctex=1 -interaction=nonstopmode -shell-escape main.tex
 | `results/` | `问题一收敛曲线.csv`、`灵敏度分析结果.csv` |
 | `figures/` | `技术路线图.pdf`、`问题二热力图.pdf` |
 
-已在本机实测通过，全部无报错：中文名脚本可直接运行也可被 `import`，
-中文名 CSV 可被 Python 和 PGFPlots 读取，中文名 PDF 可被 `\includegraphics` 引用。
-仓库已设 `core.quotepath false`，中文文件名在 git 里正常显示而非转义成八进制。
+中文命名已实测可用，脚本、CSV、PDF 均无问题。两条限制：文件名不要带空格；
+必须用 xelatex 编译，pdflatex 认不了中文文件名。
 
-两条硬性要求：**不要用空格**，会给命令行带来麻烦；**必须用 xelatex 编译**，
-pdflatex 处理不了中文文件名。
+图中的坐标轴、图例、注释一律中文，不要中英混排。
 
-### 图中文字一律用中文
+### 三种画法
 
-坐标轴标签、图例、注释全部中文，不要中英混排。PGFPlots 由 LaTeX 排版，
-中文天然可用，还能在标签里直接写 `$lpha_i$` 这样的公式。
+| 图的类型 | 画法 |
+| -------- | ---- |
+| 有数据的常规图：折线、散点、柱状、误差棒、热力图 | PGFPlots 读 CSV |
+| PGFPlots 吃力的图：地理分布、复杂网络、上万点散点 | Python 导出矢量 PDF |
+| 无数据的示意图：技术路线、模型结构、机理图 | 手写 TikZ |
 
-### 三种作图方式怎么选
+一律输出矢量，禁止 PNG，禁止截图。
 
-| 方式 | 适用 | 产物 |
-| ---- | ---- | ---- |
-| PGFPlots 直接画 | 有数据的常规图：折线、散点、柱状、误差棒、热力图 | 图在论文里直接排出，字体与正文完全一致 |
-| Python 脚本画 | PGFPlots 吃力的图：地理分布、复杂网络、大数据量散点 | 导出 PDF 或 SVG 存入 `figures/`，绝不导出 PNG |
-| AI 辅助画 | 没有数据的示意图：技术路线、模型结构、机理示意 | 由 Claude 手写 TikZ 代码，编译成矢量图 |
+### PGFPlots 读数据（默认方式）
 
-默认走第一种。Python 出图时必须配置中文字体，且给一个回退列表而不要写死单个字体名：
+Python 只负责算，结果写进 `results/`：
+
+```python
+df[["迭代次数", "目标函数值"]].to_csv(
+    ROOT / "results" / "问题一收敛曲线.csv", index=False
+)
+```
+
+LaTeX 侧读同一份数据，改完数据重编译即可，不必碰任何图形文件：
+
+```latex
+\begin{tikzpicture}
+  \begin{axis}[xlabel={迭代次数}, ylabel={目标函数值 $f(\bm{x})$}, grid=major]
+    \addplot table [x=迭代次数, y=目标函数值, col sep=comma]
+      {../results/问题一收敛曲线.csv};
+  \end{axis}
+\end{tikzpicture}
+```
+
+### Python 出图
+
+只在 PGFPlots 吃力时用。必须配中文字体回退列表，不要写死单个字体名：
 
 ```python
 plt.rcParams.update({
     "font.sans-serif": ["Microsoft YaHei", "SimHei", "Noto Sans CJK SC"],
     "axes.unicode_minus": False,
 })
-fig.savefig(ROOT / "figures" / "问题三地理分布.pdf")   # 矢量, 不要存 PNG
+fig.savefig(ROOT / "figures" / "问题三地理分布.pdf")
 ```
+
+### 工具关系与性能
+
+PGFPlots 基于 TikZ，TikZ 基于 PGF，三者都是 LaTeX 宏包，随 TeX Live 一起装好，
+不需要额外软件。
+
+数据点上千后 PGFPlots 编译会明显变慢，上万点可能超时。先在 Python 侧抽稀，
+散点保留几百到一两千个肉眼看不出差别。仍然慢就在 `main.tex` 里启用图形外部化，
+把每张图缓存成独立 PDF，编译参数需带 `-shell-escape`。
 
 ## 论文模板
 
