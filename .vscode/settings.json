@@ -40,14 +40,22 @@
   // 保存即编译
   "latex-workshop.latex.autoBuild.run": "onSave",
 
-  // 编译成功后清理中间文件, 失败时保留以便排查
+  // 强制使用上面定义的 recipe。
+  // 否则 main.tex 顶部的 "% !TeX program = xelatex" 魔法注释会让扩展
+  // 绕过 recipe 直接调 xelatex, 结果只编译一遍, 交叉引用永远是 ??,
+  // 而且 -shell-escape 参数会丢失。
+  "latex-workshop.latex.build.forceRecipeUsage": true,
+
+  // 编译后清理中间文件。
+  // 注意: 清理列表里绝不能放 *.synctex.gz, 那是正反向跳转的索引,
+  // 删掉之后 Ctrl+左键 和 Ctrl+Alt+J 都会失效。
   "latex-workshop.latex.autoClean.run": "onBuilt",
   "latex-workshop.latex.clean.subfolder.enabled": true,
   "latex-workshop.latex.clean.fileTypes": [
     "*.aux", "*.bbl", "*.blg", "*.idx", "*.ind", "*.lof", "*.lot",
     "*.out", "*.toc", "*.acn", "*.acr", "*.alg", "*.glg", "*.glo",
-    "*.gls", "*.fls", "*.log", "*.fdb_latexmk", "*.snm", "*.nav",
-    "*.synctex.gz", "*.run.xml", "*.bcf"
+    "*.gls", "*.fls", "*.fdb_latexmk", "*.snm", "*.nav",
+    "*.run.xml", "*.bcf"
   ],
 
   // 内置标签页预览, 支持正向反向跳转
