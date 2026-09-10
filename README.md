@@ -93,7 +93,7 @@ subprocess.run(["python", "-c", "..."])   # 而不是 C:/Python311/python.exe
 - **换行符与编码**：源文件统一 UTF-8；git 在 Windows 上会提示 LF/CRLF 转换，属正常现象
 - **文件名用中文**：脚本、数据、图表一律用中文命名，见「命名与作图」一节。
   已实测中文名可正常运行与编译。唯一禁止的是空格，用它分隔会给命令行操作带来麻烦
-- **依赖同步**：新装的包及时写入 `requirements.txt`，其他机器 `pip install -r requirements.txt` 即可对齐
+- **依赖同步**：用到新的包时在 README 的「环境」一节补一句，其他机器按需 `pip install` 即可
 - **大小写敏感**：Windows 不区分文件名大小写而 Linux/macOS 区分，引用文件时大小写务必与实际一致
 - **开工前先 `git pull`，收工后及时 `git push`**，减少多机之间的冲突
 
@@ -102,7 +102,6 @@ subprocess.run(["python", "-c", "..."])   # 而不是 C:/Python311/python.exe
 ```text
 2026-CUMCM/
 ├── README.md              # 本文件
-├── requirements.txt       # Python 依赖清单
 ├── problem/               # 赛题原文、附件、官方说明
 ├── data/
 │   ├── raw/               # 原始数据（只读，不做修改）
@@ -254,7 +253,7 @@ PGFPlots 基于 TikZ，TikZ 基于 PGF，三者都是 LaTeX 宏包，随 TeX Liv
 
 ## 环境
 
-- **Python 3.x**：`numpy`、`pandas`、`scipy`、`scikit-learn` 等，依赖统一记录在 `requirements.txt`。
+- **Python 3.x**：目前用到 `numpy`、`pandas`、`scipy`、`matplotlib`，直接 `pip install` 即可。
   `matplotlib` 仅用于 notebook 里快速查看数据，论文成图一律交给 PGFPlots，见下节
 - **LaTeX**：推荐 TeX Live，中文文档用 `xelatex` 编译。论文模板见「论文模板」一节，
   注意官方并不提供 LaTeX 模板

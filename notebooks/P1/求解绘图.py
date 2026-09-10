@@ -136,8 +136,8 @@ def main():
         for _, 元 in 算例汇总.iterrows():
             名 = str(元["算例"])
             匹配 = 求解汇总[求解汇总["算例"] == 名]
-            if 匹配.empty or 匹配.iloc[0]["状态"] != "正常":
-                print(f"算例 {名}：无正常解，跳过")
+            if 匹配.empty or 匹配.iloc[0]["状态"] not in ("多边形", "线段", "单点"):
+                print(f"算例 {名}：定位区域为「{匹配.iloc[0]['状态'] if not 匹配.empty else '缺失'}」，无有限直径，跳过")
                 continue
             解 = 匹配.iloc[0]
             检测表 = pd.read_csv(输出目录 / f"算例{名}_检测点.csv", encoding="utf-8-sig")
