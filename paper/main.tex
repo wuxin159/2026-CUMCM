@@ -25,6 +25,13 @@
 \usepackage{algpseudocode}
 \floatname{algorithm}{算法}
 
+% 符号说明表有二十余行, 纯 booktabs 的三线表行间无分隔, 长表格不易对齐阅读。
+% colortbl 提供 \arrayrulecolor, 配合 booktabs 的 \specialrule 画一道浅灰细线,
+% 既分开各行又不喧宾夺主(正式的三线仍为黑色)。只用于符号说明表。
+\usepackage{colortbl}
+\newcommand{\symrule}{%
+  \arrayrulecolor{black!15}\specialrule{0.3pt}{2.2pt}{2.2pt}\arrayrulecolor{black}}
+
 % 模板用 \newtheorem 定义了 proof, 会排出「证明 5」这类与定理号对不上的编号。
 % 改为不编号, 并在末尾加 QED 记号。
 % 证毕记号原用空心方块 $\square$，中文排版里容易被误认成缺字方框，改为直接写「证毕」。
@@ -276,47 +283,44 @@
     \toprule
     符号 & 含义 & 单位 \\
     \midrule
-    $S_i=(x_i,y_i)$ & 第 $i$ 个检测点的坐标，$i=1,2,\ldots,n$ & 米 \\
-    $c$             & 频道编号，$c=1,2,\ldots,20$；单源问题中略去该下标 & --- \\
-    $G$（$G_c$） & 干扰源（频道 $c$ 的干扰源）的真实位置 & --- \\
-    $\theta_{i,c}$  & 检测点 $i$ 对频道 $c$ 测得的示向度，取值于 $[0^\circ,360^\circ)$ & 度 \\
-    $\varepsilon_{i,c},\ \delta$ & 示向度误差及其半角界，$\lvert\varepsilon\rvert\le\delta=1^\circ$ & 度 \\
-    $R$             & 目标区域半径，$R=1800$ & 米 \\
-    $R_{\mathrm{eff}}$（$R_{\mathrm{eff},c}$） & 有效接收半径（未知常数），$R_{\mathrm{eff}}\in[1000,1500]$ & 米 \\
-    $R_{\mathrm{clr}}$ & 清除半径，$R_{\mathrm{clr}}=20$ & 米 \\
-    $D(P,r)$        & 以 $P$ 为圆心、$r$ 为半径的闭圆盘 & --- \\
-    $W_i$           & 检测点 $i$ 的楔形区域，见式 \eqref{eq:wedge} & --- \\
-    $L=\bigcap_i W_i$ & 定位区域：全部楔形之交（问题一） & --- \\
-    $\Omega$（$\Omega_1,\ \Omega_c$） & 可行集：在楔形之交上再交入距离与区域约束（问题二起） & --- \\
-    $d$             & 定位区域的直径，$d=\max_{P,Q\in L}\lvert PQ\rvert$ & 米 \\
-    $(A,B)$         & 实现直径的那一对顶点 & --- \\
-    $R_{\min}$      & 最小覆盖圆的半径 & 米 \\
-    $O_{\min}$      & 最小覆盖圆的圆心 & --- \\
-    $\varphi$       & 两个检测点对干扰源的交会角 & 度 \\
-    $\ell,\ \ell^{*}$ & 检测点到干扰源的距离上限和可一次清除的阈值（定理 \ref{thm:clearable}） & 米 \\
-    $v$             & 机器狗行进速度，$v=5$ & 米/秒 \\
-    $t_m,\ t_s$     & 单次检测耗时 $t_m=5$、单次切换频道耗时 $t_s=1$ & 秒 \\
-    $T$             & 自第一次检测起至该干扰源被清除为止的虚拟时间（问题二） & 秒 \\
-    $\mathbb{E}[\,\cdot\,]$ & 数学期望，按假设 (8) 的源距先验取（问题二起） & --- \\
-    $\rho,\ \rho_{\mathrm{hi}}$ & 干扰源到第一检测点的距离 $\lvert S_1G\rvert$ 及其上界 & 米 \\
-    $a,\,b,\,s$     & 第二检测点的前进量、侧移量与沿轴错位 $s=\rho-a$ & 米 \\
-    $\lambda,\mu,\kappa$ & 策略参数，见算法 \ref{alg:p2}（问题三沿用 $\lambda,\kappa$） & --- \\
-    $\mathcal{N}_c,\ \mathcal{S}_c$ & 频道 $c$ 的无信号检测点集合与有信号检测点集合 & --- \\
-    $\mathcal{T}$   & 机器狗的待执行任务表，见算法 \ref{alg:p3main} & --- \\
-    $M_c$           & 频道 $c$ 的判空栅格残余掩码 & --- \\
-    $h_{\mathrm{g}}$ & 判空栅格的步长，$h_{\mathrm{g}}=20$ & 米 \\
+    $S_i=(x_i,y_i)$ & 第 $i$ 个检测点的坐标，$i=1,2,\ldots,n$ & 米 \\ \symrule
+    $c$             & 频道编号，$c=1,2,\ldots,20$；单源问题中略去该下标 & --- \\ \symrule
+    $G$（$G_c$） & 干扰源（频道 $c$ 的干扰源）的真实位置 & --- \\ \symrule
+    $\theta_{i,c}$  & 检测点 $i$ 对频道 $c$ 测得的示向度，取值于 $[0^\circ,360^\circ)$ & 度 \\ \symrule
+    $\varepsilon_{i,c},\ \delta$ & 示向度误差及其半角界，$\lvert\varepsilon\rvert\le\delta=1^\circ$ & 度 \\ \symrule
+    $R$             & 目标区域半径，$R=1800$ & 米 \\ \symrule
+    $R_{\mathrm{eff}}$（$R_{\mathrm{eff},c}$） & 有效接收半径（未知常数），$R_{\mathrm{eff}}\in[1000,1500]$ & 米 \\ \symrule
+    $R_{\mathrm{clr}}$ & 清除半径，$R_{\mathrm{clr}}=20$ & 米 \\ \symrule
+    $v$             & 机器狗行进速度，$v=5$ & 米/秒 \\ \symrule
+    $t_m,\ t_s$     & 单次检测耗时 $t_m=5$、单次切换频道耗时 $t_s=1$ & 秒 \\ \symrule
+    $D(P,r)$        & 以 $P$ 为圆心、$r$ 为半径的闭圆盘 & --- \\ \symrule
+    $W_i$           & 检测点 $i$ 的楔形区域，见式 \eqref{eq:wedge} & --- \\ \symrule
+    $L=\bigcap_i W_i$ & 定位区域：全部楔形之交（问题一） & --- \\ \symrule
+    $\Omega$（$\Omega_1,\ \Omega_c$） & 可行集：在楔形之交上再交入距离与区域约束（问题二起） & --- \\ \symrule
+    $d$             & 定位区域的直径，$d=\max_{P,Q\in L}\lvert PQ\rvert$ & 米 \\ \symrule
+    $(A,B)$         & 实现直径的那一对顶点 & --- \\ \symrule
+    $R_{\min}$      & 最小覆盖圆的半径 & 米 \\ \symrule
+    $O_{\min}$      & 最小覆盖圆的圆心 & --- \\ \symrule
+    $\varphi$       & 两个检测点对干扰源的交会角 & 度 \\ \symrule
+    $\Delta$        & 绕行：因取道某点而多走的路程，即三角不等式的超出量 & 米 \\ \symrule
+    $\ell,\ \ell^{*}$ & 检测点到干扰源的距离上限和可一次清除的阈值（定理 \ref{thm:clearable}） & 米 \\ \symrule
+    $\rho,\ \rho_{\mathrm{hi}}$ & 干扰源到第一检测点的距离 $\lvert S_1G\rvert$ 及其上界 & 米 \\ \symrule
+    $\mathbb{E}[\,\cdot\,]$ & 数学期望，按假设 (8) 的源距先验取（问题二起） & --- \\ \symrule
+    $\lambda,\mu,\kappa$ & 策略参数，见算法 \ref{alg:p2}（问题三沿用 $\lambda,\kappa$） & --- \\ \symrule
+    $\mathcal{N}_c,\ \mathcal{S}_c$ & 频道 $c$ 的无信号检测点集合与有信号检测点集合 & --- \\ \symrule
+    $h_{\mathrm{g}}$ & 判空栅格的步长，$h_{\mathrm{g}}=20$ & 米 \\ \symrule
     $K^{*}$         & 判空所需的最少检测点数（圆覆盖数），$K^{*}=7$ & --- \\
-    $\zeta,\ \gamma$ & 整池扫描门槛与补测门槛，见式 \eqref{eq:p3scan}、\eqref{eq:p3refine} & --- \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
+上表只列跨问题反复使用的符号，每个符号在全文只有一个含义；只在某一问内部出现的量
+（如问题二的 $a,b,s$ 与 $T$、问题三的 $\zeta,\gamma$ 与 $\mathcal{T}$）
+按“首次出现即定义”的原则在使用处就地说明，不再列入本表。
 花体字母（$\mathcal{N}_c$、$\mathcal{S}_c$、$\mathcal{T}$、$\mathcal{C}$、$\mathcal{R}$）
 一律表示\emph{集合}，与同形的普通字母无关。
 定理证明内部引入的临时记号（如定理 \ref{thm:counter} 的 $h,r_1,r_2,\beta,\tau,\sigma$、
 定理 \ref{thm:clearable} 的 $\ell_i,w_i$）只在该证明内有效，不在别处使用。
-$\Delta$ 在全文统一表示\emph{因绕行而多走的路程}，即三角不等式的超出量
-（式 \eqref{eq:p2detourdef} 与 \eqref{eq:p3anchor}）。
 问题一只涉及单个干扰源，故在第 \ref{sec:p1} 节中略去频道下标 $c$，简记为 $\theta_i$、
 $\varepsilon_i$；问题三、四同时处理多个频道，届时恢复双下标。
 
@@ -1419,9 +1423,9 @@ $\Rightarrow\lvert x-p\rvert>20$ 米。
 
 据此，频道 $c$ 的可行集为若干凸约束之交减去若干排除盘。为兼顾精度与非凸性，
 按频道状态取两种表示：\textbf{未探测}频道（从未收到信号）用步长 $h_{\mathrm{g}}=20$ 米的
-栅格布尔掩码表示，只有整格落入排除盘才划掉，即要求格心距
-$\le 1000-h/\sqrt2=985.86$ 米；\textbf{已探测}频道用凸多边形表示，
-非凸排除盘按下述方式保守线性化。
+栅格布尔掩码 $M_c$ 表示——$M_c$ 记录该频道尚未被排除的方格，初值为全部方格，
+只有整格落入排除盘才划掉，即要求格心距 $\le 1000-h_{\mathrm{g}}/\sqrt2=985.86$ 米；
+\textbf{已探测}频道用凸多边形表示，非凸排除盘按下述方式保守线性化。
 
 \textbf{本文所有近似一律偏向“集合更大”一侧}：维护的集合必须是真实可行集的超集，
 一旦偏向子集侧，真源即可能被排除，“确保清除”便失去依据。
@@ -1500,7 +1504,9 @@ $R_{\mathrm{eff}}\ge 1000$ 米，\textbf{并非无条件保证}。
 策略分三层。\textbf{信念层}为每个频道维护上述可行集与判空掩码；
 \textbf{动作层}在一个停靠点上把该处值得测的频道一次测完，条件满足即清除；
 \textbf{路线层}把“待清除点、待补测点、判空锚点”放进同一个开放巡回问题排序，
-采用滚动时域，只执行第一段后重新规划。算法 \ref{alg:p3main} 给出主循环。
+采用滚动时域，只执行第一段后重新规划。下文记 $\mathcal{T}$ 为路线层每轮重建的
+\textbf{任务表}，其元素为三元组（任务类型，执行位置，所属频道）。
+算法 \ref{alg:p3main} 给出主循环。
 
 需注意题目未设独立的移动指令，移动由 \verb|/measure| 或 \verb|/clear| 的位置参数体现，
 故“走到某处”在实现上必然表现为“在某处执行一次检测或清除”。
@@ -1556,6 +1562,7 @@ $R_{\mathrm{eff}}\ge 1000$ 米，\textbf{并非无条件保证}。
   g(p)\ \ge\ \zeta\cdot\frac{m}{k} .
 \end{equation}
 
+其中 $\zeta>0$ 为\textbf{整池扫描门槛系数}，取值见 \ref{sssec:p3result} 节。
 残余 $m$ 越小、还需锚点数 $k$ 越少，门槛 $\zeta m/k$ 自动抬高，
 避免收尾阶段为少量残余反复扫描。
 
@@ -1580,7 +1587,7 @@ $R_{\mathrm{eff}}\ge 1000$ 米，\textbf{并非无条件保证}。
   p_{\mathrm{rec}}\cdot\Bigl(1-\frac{\hat d(q)}{d}\Bigr)\ \ge\ 1-\gamma
 \end{equation}
 
-时才执行该次补测。
+时才执行该次补测，其中 $\gamma\in(0,1)$ 为\textbf{补测门槛}，取值见 \ref{sssec:p3result} 节。
 
 单源问题中第二个检测点总落在保证收信透镜域内，无须考虑此项；
 问题三的可行集可长达 $1500$ 米，正横补测点很容易落到接收范围之外。
