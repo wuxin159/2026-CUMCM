@@ -1,15 +1,5 @@
 """问题二 · 公共模型层（只算数，不作图，不写文件）。
-
 被 理论验证.py / 候选区域.py / 策略仿真.py / 绘图.py 共同 import。
-
-坐标一律用「局部标架」：把第一个检测点 S1 平移到原点、把它测得的示向度 theta1
-旋转到 x 轴正向。于是
-    真实干扰源 G = rho * (cos alpha, sin alpha)，其中 alpha = -eps1，|alpha| <= delta
-    候选第二检测点 S2 = (a, b)，a 为沿示向线的前进量，b 为侧移量（可正可负）
-所有几何量都在这个标架里算，最后再转回全局坐标（转回函数见 局部转全局）。
-
-P1 已经把「楔形取交 -> 凸多边形 -> 直径 / 最小覆盖圆」做完并交叉验证过，
-本文件直接 import，不重写。
 """
 import sys
 from pathlib import Path
@@ -38,13 +28,7 @@ TAN_DELTA = float(np.tan(np.radians(DELTA)))
 
 # ================================================================ 一、先验区域 Ω1
 def 距离上界(S1=(0.0, 0.0), theta1=0.0, delta=DELTA, R=R_AREA):
-    """一次检测之后，干扰源到 S1 的距离 rho 的确定上界。
-
-    两条来源：
-      ① 收得到信号 => rho <= R_eff <= R_RECV_MAX = 1500
-      ② 干扰源必在目标区域内 => 沿楔形任一方向的射线不能超出圆 R
-    取两者较小值。楔形内 alpha 取 [-delta, delta]，取其中最远的一条射线。
-    """
+    """一次检测之后，干扰源到 S1 的距离 rho 的确定上界。"""
     S1 = np.asarray(S1, dtype=float)
     最远 = 0.0
     for a in np.linspace(theta1 - delta, theta1 + delta, 21):
@@ -61,11 +45,7 @@ def 距离上界(S1=(0.0, 0.0), theta1=0.0, delta=DELTA, R=R_AREA):
 
 
 def 圆的外切半平面(圆心, 半径, 段数=180, 角范围=None):
-    """用外切多边形逼近圆盘，返回若干 (a, b, c) 表示 a x + b y <= c。
-
-    取「外切」而不是「内接」：得到的是圆盘的外逼近，
-    所以裁出来的区域是真实区域的**超集**，宁可高估定位区域也不低估。
-    """
+    """用外切多边形逼近圆盘，返回若干 (a, b, c) 表示 a x + b y <= c。"""
     圆心 = np.asarray(圆心, dtype=float)
     低, 高 = (0.0, 360.0) if 角范围 is None else 角范围
     角 = np.radians(np.linspace(低, 高, 段数, endpoint=(角范围 is not None)))
@@ -78,21 +58,7 @@ def 圆的外切半平面(圆心, 半径, 段数=180, 角范围=None):
 
 def 先验区域(S1=(0.0, 0.0), theta1=0.0, delta=DELTA,
              rho_lo=R_NEAR, rho_hi=None, R=R_AREA, 弧段数=6):
-    """第一次检测之后干扰源的可行集 Ω1（凸多边形顶点表）。
-
-        Ω1 = 楔形 W1  ∩  {rho_lo <= |P-S1| <= rho_hi}  ∩  目标圆盘
-
-    三项约束的出处：楔形来自示向度读数；rho <= rho_hi 来自「收得到信号」与
-    「干扰源在目标区域内」；rho > rho_lo = 5 来自「返回的是 direction 而不是 near」。
-
-    r >= rho_lo 本身非凸，但在 2delta = 2° 的窄扇形上，弦与弧的矢高只有
-    rho_lo (1 - cos delta) = 0.8 毫米，用弦所在半平面代替，且方向上取的是
-    **更宽松**的一侧（保留了 [rho_lo cos delta, rho_lo) 这层薄壳），仍是超集。
-
-    弧段数 = 6 时外圈用 6 条切线逼近 2° 的圆弧，外凸误差
-    rho_hi (1/cos(delta/6) - 1) ≈ 2.5 厘米，且同样偏向超集一侧；
-    独立复核.py 中与 弧段数 = 240 的结果逐点对比过。
-    """
+    """第一次检测之后干扰源的可行集 Ω1（凸多边形顶点表）。"""
     S1 = np.asarray(S1, dtype=float)
     if rho_hi is None:
         rho_hi = 距离上界(S1, theta1, delta, R)
@@ -129,11 +95,7 @@ def 定位区域(Ω1, S2, theta2, delta=DELTA):
 
 
 def 求直径快(顶点):
-    """与 P1 的 求直径 等价，只是把 O(m^2) 的两重 Python 循环换成一次 numpy 广播。
-
-    本问要在上万个候选点 x 几十个距离节点上重复调用，纯 Python 版会慢两个量级。
-    等价性在 独立复核.py 中对随机多边形逐点比对。
-    """
+    """与 P1 的 求直径 等价，只是把 O(m^2) 的两重 Python 循环换成一次 numpy 广播。"""
     P = np.asarray(顶点, dtype=float)
     if len(P) == 1:
         return 0.0, (tuple(P[0]), tuple(P[0]))
@@ -143,12 +105,7 @@ def 求直径快(顶点):
 
 
 def 最小覆盖圆快(顶点):
-    """先试「以直径点对为直径的圆」，盖不住再退回 P1 的暴力枚举。
-
-    合法性：恒有 Rmin >= d/2（直径点对本身就要被盖住），所以只要以 AB 为直径的
-    圆能盖住全部顶点，它就**必然**是最小覆盖圆，无需再枚举。P1 §4.1 的
-    覆盖判定说明这一分支并非总能成立，故保留了完整的回退路径。
-    """
+    """先试「以直径点对为直径的圆」，盖不住再退回 P1 的暴力枚举。"""
     P = np.asarray(顶点, dtype=float)
     if len(P) == 1:
         return (tuple(P[0]), 0.0)
@@ -179,14 +136,7 @@ def 方位角(起点, 终点):
 
 
 def 近似直径(rho, a, b, delta=DELTA):
-    """两楔形交（平行四边形）长对角线的闭式长度。P1 §4.2 公式的坐标化形式。
-
-        d = (2 tan delta / |b|) * sqrt(s^2+b^2) * sqrt((rho+|s|)^2 + b^2),  s = rho - a
-
-    推导：源附近两楔形各退化为宽 w_i = 2 r_i tan delta 的条带，交会角 phi
-    满足 sin phi = |b|/r2、cos phi = |s|/r2，代入
-    d = sqrt(w1^2+w2^2+2 w1 w2 |cos phi|)/sin phi 即得。b -> 0 时发散（共线，无交会）。
-    """
+    """两楔形交（平行四边形）长对角线的闭式长度。P1 §4.2 公式的坐标化形式。"""
     rho = np.asarray(rho, dtype=float)
     b = np.asarray(b, dtype=float)
     s = rho - np.asarray(a, dtype=float)
@@ -197,21 +147,13 @@ def 近似直径(rho, a, b, delta=DELTA):
 
 
 def 最优侧移(rho, a):
-    """给定前进量 a（即给定沿轴错位 |s| = |rho - a|），使近似直径最小的侧移量。
-
-        b* = sqrt(|s| (rho + |s|))
-    对 ln d 关于 b 求导置零解得，是 |s| 与 rho+|s| 的几何平均。
-    """
+    """给定前进量 a（即给定沿轴错位 |s| = |rho - a|），使近似直径最小的侧移量。"""
     s = np.abs(np.asarray(rho, dtype=float) - np.asarray(a, dtype=float))
     return np.sqrt(s * (np.asarray(rho, dtype=float) + s))
 
 
 def 最优直径(rho, a, delta=DELTA):
-    """取 b = b* 时的最小可能直径：d_min = 2 tan delta (rho + 2|rho - a|)。
-
-    含义：以 2 rho tan delta（正横站位的理想值）为基准，沿轴每错位 1 米，
-    直径线性增加 4 tan delta ≈ 0.0698 米。
-    """
+    """取 b = b* 时的最小可能直径：d_min = 2 tan delta (rho + 2|rho - a|)。"""
     s = np.abs(np.asarray(rho, dtype=float) - np.asarray(a, dtype=float))
     return 2.0 * np.tan(np.radians(delta)) * (np.asarray(rho, dtype=float) + 2.0 * s)
 
@@ -224,12 +166,7 @@ def 交会角(rho, a, b):
 
 # ================================================================ 三、接收概率
 def 保证收信(rho, a, b):
-    """第二次检测是否**必定**收到信号（不依赖未知的有效接收半径 R_eff）。
-
-    已知 rho <= R_eff <= 1500，故 R_eff >= max(1000, rho)。
-    于是 |S2 - G| <= max(1000, rho) 就保证收得到。
-    特例：|S2-G| <= rho（比第一个检测点更靠近干扰源）时自动满足。
-    """
+    """第二次检测是否**必定**收到信号（不依赖未知的有效接收半径 R_eff）。"""
     rho = np.asarray(rho, dtype=float)
     r2 = np.hypot(rho - np.asarray(a, dtype=float), np.asarray(b, dtype=float))
     return r2 <= np.maximum(R_RECV_MIN, rho)
@@ -249,15 +186,7 @@ def 收信概率(rho, a, b):
 
 # ================================================================ 四、rho 的先验
 def 距离先验(rho, rho_lo=R_NEAR, rho_hi=R_RECV_MAX):
-    """已在 S1 收到信号的条件下，rho 的后验密度（未归一化）。
-
-        p(rho) ∝ rho * P(R_eff >= rho),   R_eff ~ U[1000, 1500]
-
-    第一项 rho 来自「干扰源在目标区域内均匀分布」的面积元；
-    第二项是「这一距离上还能收得到」的概率。
-    题目未给 R_eff 的分布，均匀是我们的假设，须在论文假设一节声明，
-    并在灵敏度分析里换成 rho 上的均匀分布重跑。
-    """
+    """已在 S1 收到信号的条件下，rho 的后验密度（未归一化）。"""
     rho = np.asarray(rho, dtype=float)
     可收 = np.clip((R_RECV_MAX - np.maximum(rho, R_RECV_MIN)) /
                    (R_RECV_MAX - R_RECV_MIN), 0.0, 1.0)
@@ -284,10 +213,7 @@ def 行进时间(距离):
 
 
 def 绕行(rho, a, b):
-    """相对于「沿示向线直奔干扰源」多走的路程（米）。
-
-    直奔需要 rho；经 S2 需要 |S1 S2| + |S2 G|。差额就是侧移换来的代价。
-    """
+    """相对于「沿示向线直奔干扰源」多走的路程（米）。"""
     rho = np.asarray(rho, dtype=float)
     a = np.asarray(a, dtype=float)
     b = np.asarray(b, dtype=float)
@@ -295,17 +221,7 @@ def 绕行(rho, a, b):
 
 
 def 收尾代价(D2, r2, delta=DELTA):
-    """第二次检测之后，把区域从直径 D2 收到 20 米以内并完成清除的补充路程。
-
-    收尾动作：走向定位区域，在其中心的**正横**方向、侧移 Lambda = D2/2 处补测一次，
-    再走到区域中心清除。相对于「直奔区域中心」的额外路程约为
-
-        Lambda + Lambda^2 / (2 r2)
-
-    第一项是补测点回到区域中心的一段，第二项是绕到正横位置的勾股余量。
-    补测后区域尺度约 2 tan delta * (r3^2 + Lambda^2)/Lambda，在 Lambda = r3 时
-    取到 4 Lambda tan delta，只要 Lambda <= 286 米就能压到 20 米以内。
-    """
+    """第二次检测之后，把区域从直径 D2 收到 20 米以内并完成清除的补充路程。"""
     Λ = 0.5 * np.asarray(D2, dtype=float)
     r2 = np.maximum(np.asarray(r2, dtype=float), 1.0)
     return Λ + Λ * Λ / (2.0 * r2)

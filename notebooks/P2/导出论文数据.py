@@ -1,9 +1,5 @@
 """问题二 · 把定稿数据导出到 results/，供论文的 PGFPlots 读取。
-
 命名沿用 P1 的体例：results/问题二_*.csv。
-等值面与边界曲线按论文版面抽稀——原始网格 7120 点、透镜边界 483 点，
-直接交给 PGFPlots 会显著拖慢编译，且版面上分辨不出差别。
-抽稀只影响作图，全部数值结论仍以 notebooks/P2/ 下的完整数据为准。
 """
 from pathlib import Path
 

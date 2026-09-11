@@ -8,8 +8,9 @@
 % LaTeX Workshop 读到它会改用内置默认工具, 绕过 .vscode/settings.json
 % 里的编译方案, 结果只编译一遍, 交叉引用永远是 ??。
 %
-% 当前进度: 只完成问题一。问题二、三、四仅留标题占位。
+% 当前进度: 问题一、二、三已完成（5.1--5.3）；问题四仅留标题占位。
 % 摘要与关键词待四问全部完成后统一撰写。
+% 附录「核心代码」的 13 个 lstinputlisting 暂时注释掉了, 定稿前需取消注释。
 
 % withoutpreface 去掉封面与编号专用页, 这是 2026 年电子版提交的要求。
 % 打印纸质版时改回 \documentclass{cumcmthesis} 以生成承诺书和编号页。
@@ -19,13 +20,15 @@
 
 % 算法伪代码环境: 模板未提供, 在此补上。
 % algorithm 提供浮动体, algpseudocode 提供 \State \If \For 等语句。
+\usepackage{multirow}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \floatname{algorithm}{算法}
 
 % 模板用 \newtheorem 定义了 proof, 会排出「证明 5」这类与定理号对不上的编号。
 % 改为不编号, 并在末尾加 QED 记号。
-\renewenvironment{proof}{\par\noindent\textbf{证明}\quad}{\hfill$\square$\par\medskip}
+% 证毕记号原用空心方块 $\square$，中文排版里容易被误认成缺字方框，改为直接写「证毕」。
+\renewenvironment{proof}{\par\noindent\textbf{证明}\quad}{\hfill 证毕\par\medskip}
 \renewcommand{\algorithmicrequire}{\textbf{输入:}}
 \renewcommand{\algorithmicensure}{\textbf{输出:}}
 
@@ -73,13 +76,17 @@
 % TODO: 四问全部完成后统一撰写摘要。
 % 需回答: 解决什么问题、用了什么模型、核心结果是什么、结论有什么实际意义。
 待四问全部完成后撰写。
+
+% 关键词必须写在 abstract 环境**内部**。
+% 模板的 abstract 环境结尾带 \newpage（见 cumcmthesis.cls 第 507 行），
+% 若把 \keywords 放在 \end{abstract} 之后, 关键词会被推到第二页,
+% 违反《论文格式规范》第三条「摘要内容（含标题和关键词）不能超过一页」。
+\keywords{待定\quad 待定\quad 待定}
 \end{abstract}
 
-\keywords{待定\quad 待定\quad 待定}
-
-\tableofcontents
-
-\newpage
+% 不要目录。《论文格式规范（2026 年修订稿）》第四条:
+% “论文从第四页开始是正文内容（不要目录, 不超过 30 页）”。
+% 目录会被视为违反竞赛规则, 故不得启用 \tableofcontents。
 
 %======================================================================
 \section{问题重述}
@@ -189,6 +196,15 @@
         $[1000,1500]$ 上均匀分布，由此导出源距的先验密度
         $p(\rho)\propto\rho\cdot\Pr(R_{\mathrm{eff}}\ge\rho)$。题目未给出干扰源位置的分布，
         该假设仅用于取期望；其影响将在第 \ref{sec:p2check} 节以敏感性分析说明。
+  \item 每个频道至多对应一个干扰源，不同干扰源的信号互不影响
+        （题目附件 2 第 1.3 节与附录 1 第 (2) 条给定）。据此 $20$ 个频道的可行集
+        可以独立维护。
+  \item 在问题三的数值实验中，假设干扰源个数在 $10\sim16$ 之间等概率取值、
+        位置在目标圆域内均匀分布。题目仅给出个数区间与"位于区域内"，
+        未给出分布；该假设仅用于生成算例与统计平均指标，
+        其影响将在问题三的灵敏度分析中以贴边、内圈、聚集三种非均匀布局检验。
+        \textbf{问题三关于"确保清除"的结论只依赖假设 (1) 与 (7) 的确界，
+        与上述分布假设无关。}
 \end{enumerate}
 
 %======================================================================
@@ -198,40 +214,47 @@
   \centering
   \caption{符号说明}
   \label{tab:symbols}
-  \begin{tabular}{clc}
+  \begin{tabularx}{\textwidth}{cXc}
     \toprule
     符号 & 含义 & 单位 \\
     \midrule
+    \multicolumn{3}{l}{\emph{各问通用}} \\
     $S_i=(x_i,y_i)$ & 第 $i$ 个检测点的坐标，$i=1,2,\ldots,n$ & 米 \\
+    $c$             & 频道编号，$c=1,2,\ldots,20$；单源问题中略去该下标 & --- \\
+    $G$（$G_c$） & 干扰源（频道 $c$ 的干扰源）的真实位置 & --- \\
     $\theta_{i,c}$  & 检测点 $i$ 对频道 $c$ 测得的示向度，取值于 $[0^\circ,360^\circ)$ & 度 \\
-    $\varepsilon_{i,c}$ & 检测点 $i$ 对频道 $c$ 的示向度误差 & 度 \\
-    $\delta$        & 示向度误差半角，本文取 $\delta=1^\circ$ & 度 \\
+    $\varepsilon_{i,c},\ \delta$ & 示向度误差及其半角界，$\lvert\varepsilon\rvert\le\delta=1^\circ$ & 度 \\
     $R$             & 目标区域半径，$R=1800$ & 米 \\
-    $G$             & 干扰源的真实位置 & --- \\
-    $W_i$           & 检测点 $i$ 确定的楔形区域 & --- \\
-    $L=\bigcap_i W_i$ & 定位区域 & --- \\
-    $d$             & 定位区域的直径，$d=\max_{P,Q\in L}|PQ|$ & 米 \\
-    $(A,B)$         & 实现直径的顶点对，$|AB|=d$ & --- \\
+    $R_{\mathrm{eff}}$（$R_{\mathrm{eff},c}$） & 有效接收半径（未知常数），$R_{\mathrm{eff}}\in[1000,1500]$ & 米 \\
+    $R_c$           & 清除半径，$R_c=20$ & 米 \\
+    $W_i,\ L=\bigcap_i W_i$ & 检测点 $i$ 的楔形区域与定位区域（问题三记作 $\Omega_c$） & --- \\
+    $d,\ (A,B)$     & 定位区域的直径 $d=\max_{P,Q\in L}\lvert PQ\rvert$ 及实现它的顶点对 & 米 \\
     $R_{\min}$      & 定位区域的最小覆盖圆半径 & 米 \\
     $\varphi$       & 两个检测点对干扰源的交会角 & 度 \\
-    $m$             & 定位区域的顶点个数 & --- \\
     $\ell,\ \ell^{*}$ & 检测点到干扰源的距离上限及其可一次清除的阈值（定理 \ref{thm:clearable}） & 米 \\
-    $E$             & 顶点超出“以直径为直径的圆”的最大距离 & 米 \\
+    $v,\ t_m,\ t_s$ & 机器狗速度 $5$、检测耗时 $5$、切频耗时 $1$ & 米/秒，秒 \\
+    $T$             & 虚拟时间（问题二指单源的定位清除时间，问题三指整局总时间） & 秒 \\
     \midrule
-    \multicolumn{3}{l}{\emph{以下符号用于问题二（第 \ref{sec:p2} 节）}} \\
-    $\rho,\ \rho_{\mathrm{hi}}$ & 干扰源到第一检测点的距离 $|S_1G|$ 及其上界 & 米 \\
-    $R_{\mathrm{eff}}$ & 干扰源的有效接收半径，$R_{\mathrm{eff}}\in[1000,1500]$ & 米 \\
-    $R_c$           & 清除半径，$R_c=20$ & 米 \\
+    \multicolumn{3}{l}{\emph{问题二专用（第 \ref{sec:p2} 节）}} \\
+    $\rho,\ \rho_{\mathrm{hi}}$ & 干扰源到第一检测点的距离 $\lvert S_1G\rvert$ 及其上界 & 米 \\
     $a,\,b,\,s$     & 第二检测点的前进量、侧移量与沿轴错位 $s=\rho-a$ & 米 \\
-    $T$             & 自第一次检测至该源被清除的总虚拟时间 & 秒 \\
-    $\lambda,\mu,\kappa$ & 策略参数，见算法 \ref{alg:p2} & --- \\
+    $\lambda,\mu,\kappa$ & 策略参数，见算法 \ref{alg:p2}（问题三沿用 $\lambda,\kappa$） & --- \\
+    \midrule
+    \multicolumn{3}{l}{\emph{问题三专用}} \\
+    $N_c,\ S_c$     & 频道 $c$ 的无信号检测点集合与有信号检测点集合 & --- \\
+    $M_c,\ h$       & 频道 $c$ 的判空栅格残余掩码与栅格步长 $h=20$ & 米 \\
+    $K^{*}$         & 判空所需的最少检测点数（圆覆盖数），$K^{*}=7$ & --- \\
+    $\zeta,\ \gamma$ & 整池扫描门槛与补测门槛，见式 \eqref{eq:p3scan}、\eqref{eq:p3refine} & --- \\
     \bottomrule
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
+只在一处出现的符号不列入上表，一律在使用处就地定义，例如超出量 $E$（式 \eqref{eq:key}）、
+定理 \ref{thm:counter} 构型的 $\rho,h,r_1,r_2,s$、问题三的收信把握 $p_{\text{收}}$
+（式 \eqref{eq:p3recv}）、可行集半长 $\Lambda$ 与锚点准则的 $L_0,\Delta(p)$
+（式 \eqref{eq:p3anchor}）。
 问题一只涉及单个干扰源，故在第 \ref{sec:p1} 节中略去频道下标 $c$，简记为 $\theta_i$、
-$\varepsilon_i$。问题三、四需同时处理多个频道，届时恢复双下标。
-此外，定理 \ref{thm:counter} 中的 $\rho,h,r_1,r_2,s$ 为该构型的局部符号，均在定理陈述中就地定义。
+$\varepsilon_i$；问题三、四同时处理多个频道，届时恢复双下标。
 
 %======================================================================
 \section{模型的建立与求解}
@@ -421,6 +444,9 @@ $|VC|^2=r_2^2+s^2-2r_2s\cos120^\circ=r_2^2+r_2s+s^2$，故
 即 $V$ 严格落在圆外，(b) 得证。(c) 的推导见附录 \ref{app:proof}。
 \end{proof}
 
+下文把\textbf{顶点越出“以直径为直径的圆”的最大距离}记作
+$E=\max_{V}\lvert VC\rvert-R$，它度量该圆“差多少才能覆盖定位区域”。
+
 式 \eqref{eq:key} 是\textbf{精确代数恒等式}，其符号不依赖任何数值计算。
 该定理另有两点值得注意：其一，结论\textbf{与 $\rho$ 无关}，即检测点距离多远都同样失效，
 并非刻意构造的特例；其二，由 \eqref{eq:key} 知 $E$ 随 $s$ 单调，而 $\delta\to0$ 时
@@ -529,9 +555,10 @@ $\ell=770$ 米时实测 $R_{\min}=19.0$ 米，约为上界的 $95\%$；
 
 \begin{table}[H]
   \centering
-  \caption{三组算例的设置与求解结果}
+  \caption{三组算例的设置与求解结果（$n$ 为检测点数，$m$ 为定位区域顶点数，
+    $E$ 为顶点越出“以直径为直径的圆”的最大距离）}
   \label{tab:p1result}
-  \begin{tabular}{clcccccc}
+  \begin{tabularx}{\textwidth}{cXcccccc}
     \toprule
     算例 & 布置 & $n$ & $m$ & $d$/米 & $R_{\min}$/米 & 圆能否覆盖 & 超出量 $E$/米 \\
     \midrule
@@ -539,7 +566,7 @@ $\ell=770$ 米时实测 $R_{\min}=19.0$ 米，约为上界的 $95\%$；
     B & 三点均布 $120^\circ$，误差取零 & 3 & 6 & 36.2834 & 18.3245 & 否 & 0.2749 \\
     C & 五点随机布置 & 5 & 6 & 27.7060 & 13.8530 & 是 & 0 \\
     \bottomrule
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 算例 A 的检测点布置是预先设定的，两个误差 $-0.9864^\circ$ 与 $+0.8110^\circ$ 由固定
@@ -790,8 +817,8 @@ $d\ge d_{\min}(a)\ge 2\rho\tan\delta$。即无论第二检测点选在何处，
 $19.21,20.01,21.97$ 米，与式 \eqref{eq:p2limit} 吻合。故有：
 
 \begin{center}
-\emph{源距超过 $1146$ 米时，即便事先已知距离，两次检测也不足以一次清除；
-第二次检测应以将距离歧义由 $1495$ 米压缩至百米量级为目标。}
+\emph{源距超过 $1146$ 米时，即便事先已知距离，两次检测也不足以一次清除；}\\
+\emph{第二次检测应以将距离歧义由 $1495$ 米压缩至百米量级为目标。}
 \end{center}
 
 此结论与问题一定理 \ref{thm:clearable} 并不矛盾：后者设两检测点距源\textbf{均}不超过
@@ -1150,7 +1177,662 @@ $-0.6\%$、$+2.0\%$、$-0.7\%\!\sim\!-0.2\%$，而“定位区域包含干扰源
 
 \subsection{问题三：全向干扰源的自动搜索定位与清除策略}
 
-% TODO: 待完成。含 5.3.1 模型建立、5.3.2 算法设计、5.3.3 演练与正式测试结果、5.3.4 模型检验。
+\subsubsection{问题结构与建模思路}
+
+问题三与前两问的差别在于\textbf{检测点、检测序列与停止时刻全部内生}：
+目标区域内有 $10\sim16$ 个全向干扰源，个数、频道、位置均未知，
+一只机器狗自原点出发，要在确保全部清除的前提下把时间做短。相对问题一、二，
+需要新补三件事：
+
+\begin{enumerate}[label=(\arabic*)]
+  \item \textbf{多频道}。$20$ 个频道各需维护一套可行集，而它们共用同一条路径；
+  \item \textbf{判空}。干扰源个数未知，“已经清完”这件事需要一个可证的依据；
+  \item \textbf{排程}。信息获取与清除执行必须安排进同一条巡回路线。
+\end{enumerate}
+
+整个策略由一条结构性事实推出：
+\textbf{一次停靠的行程被所有频道分摊，而检测的 $5$ 秒不能分摊}。
+走到某点的代价为 $\lvert\Delta\rvert/v$，与在该点测几个频道无关；
+在该点测 $k$ 个频道的代价为 $k(t_m+t_s)$，与走了多远无关。于是为测一个频道
+专程行进 $500$ 米需 $100$ 秒，而顺路多测两个频道仅需 $12$ 秒。
+这一差异决定了策略的形态：\textbf{不能逐源处理，必须是一条把全部任务串起来的巡回}。
+
+另一条事实限定了策略必须包含撒开搜索的环节。设干扰源在圆域内均匀分布、
+有效接收半径服从 $U[1000,1500]$，则在原点能收到某源信号的概率为
+
+\begin{equation}
+  \label{eq:p3origin}
+  P(\text{原点可收})=\frac{\mathbb{E}\!\left[R_{\mathrm{eff}}^{2}\right]}{R^{2}}
+  =\frac{\left(1500^{3}-1000^{3}\right)/(3\times 500)}{1800^{2}}=0.4887 .
+\end{equation}
+
+即\textbf{站在出发点最多只能看到不足一半的干扰源}，三个具名算例实测分别为
+$5/13$、$2/16$、$6/10$。
+
+\subsubsection{停止准则：判空问题化为圆覆盖问题}
+
+由于源数未知，不能以计数收工。可用的唯一依据是有效接收半径的下界：
+在 $p$ 处检测频道 $c$ 返回 \verb|no_signal|，意味着
+
+\begin{equation}
+  \label{eq:p3exclude}
+  \lvert p-G_c\rvert > R_{\mathrm{eff},c}\ \ge\ 1000\ \text{米},
+\end{equation}
+
+即\textbf{一次无信号排除一个半径 $1000$ 米的圆盘}。于是频道 $c$ 不存在干扰源
+等价于其全部无信号检测点的排除盘覆盖整个目标圆域：
+
+\begin{equation}
+  \label{eq:p3empty}
+  \text{频道 } c \text{ 判空}\iff
+  \bigcup_{p\in N_c} D(p,1000)\ \supseteq\ D(O,1800),
+\end{equation}
+
+其中 $N_c$ 为频道 $c$ 的无信号检测点集合。\textbf{“何时可以停”由此化为一个圆覆盖问题}：
+用半径 $r=1000$ 的圆盘覆盖半径 $R=1800$ 的圆域最少需要几个。
+
+记 $K^{*}$ 为该覆盖数。$n$ 个等圆覆盖单位圆的最小半径比 $r_n/R$ 为经典结果，
+本文用 $k$-center 的切比雪夫迭代独立重算并与文献值对照，
+结果见图 \ref{fig:p3cover}。
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[width=0.72\linewidth, height=5.4cm,
+      xlabel={锚点个数 $n$}, ylabel={所需等圆半径 (米)},
+      xmin=2.6, xmax=8.4, ymin=700, ymax=1700,
+      legend pos=north east, legend style={font=\small}, grid=major]
+      \addplot[thick, blue!70!black, mark=*, mark size=1.6pt]
+        table[x=锚点数n, y=最优覆盖半径_米, col sep=comma]
+        {\datadir/问题三_覆盖数.csv};
+      \addlegendentry{本文数值搜索}
+      \addplot[thick, red] coordinates {(2.6,1000) (8.4,1000)};
+      \addlegendentry{可用排除半径 $r=1000$}
+      \node[anchor=west, font=\small, red!70!black] at (axis cs:6.15,1270)
+        {$n=6$ 需 $1000.63$，仅差 $0.63$ 米};
+      \draw[->, red!70!black] (axis cs:6.5,1230) -- (axis cs:6.05,1020);
+    \end{axis}
+  \end{tikzpicture}
+  \caption{判空所需的等圆覆盖半径。本文数值搜索与文献值的相对偏差不超过
+    $1.8\times10^{-3}$；$n=6$ 时需 $1000.81$ 米（文献值 $1000.63$ 米），
+    均超过可用的 $1000$ 米，故 $K^{*}=7$。}
+  \label{fig:p3cover}
+\end{figure}
+
+\textbf{这是一处极窄的临界}：六个锚点按文献最优构型需要 $1000.63$ 米，
+而可用的排除半径恰为 $1000$ 米，相对差仅 $0.063\%$。若题目将接收半径下界写为
+$1001$ 米，判空所需锚点数即由 $7$ 降至 $6$。此类临界无法凭直觉判断，必须计算。
+
+关于严谨性需说明三点。其一，“六个不够”依赖 $r_6/R=0.555905$ 这一\textbf{文献常数}：
+数值搜索只能给出上界，不能证明下界，本文的作用是独立复现该常数。
+其二，自洽的初等下界为 $K^{*}\ge 5$——在目标圆周上按 $72^\circ$ 取五点，
+相邻弦长 $2R\sin 36^\circ=2116>2r=2000$ 米，故任一半径 $1000$ 米的圆盘至多含其一。
+其三，$K^{*}\le 7$ 有显式构造：一个圆心加六个半径 $\tfrac{\sqrt3}{2}R=1558.85$ 米的
+环点，等圆半径 $R/2=900$ 米即可（$2$ 米方格逐点验证，未覆盖方格数为 $0$）。
+
+\textbf{最要紧的是：策略的完备性并不依赖 $K^{*}=7$ 这一常数。}
+算法在运行时直接检查判空栅格的残余是否为空（见 \ref{sssec:p3belief} 节），
+$K^{*}$ 仅用于代价核算。由式 \eqref{eq:p3empty} 与 $K^{*}=7$ 可得判空代价的下界：
+每个空频道至少需 $7$ 次检测，$13$ 个源、$7$ 个空频道时为 $294$ 秒，
+约占实测总时长的两成，\textbf{任何策略都无法消去这一部分}。
+
+\subsubsection{多频道集员估计与三条命题}
+\label{sssec:p3belief}
+
+沿用问题一、二的集员估计：题目给出的是确界而非分布，而“确保清除”要求的是保证
+而非高概率。问题三在楔形取交之外新增三类约束。
+
+\textbf{(i) 无信号排除盘（非凸）}：由式 \eqref{eq:p3exclude}，
+$\texttt{no\_signal}$ 于 $p$ 处 $\Rightarrow\lvert x-p\rvert>1000$。
+
+\textbf{(ii) 接收半径序约束（凸，且精确）}：$R_{\mathrm{eff},c}$ 是该源的固有常数。
+若在 $q$ 处收到该频道信号而在 $p$ 处未收到，则
+$\lvert q-G\rvert\le R_{\mathrm{eff},c}<\lvert p-G\rvert$，故
+
+\begin{equation}
+  \label{eq:p3order}
+  2\,x\cdot(p-q)\ \le\ \lvert p\rvert^{2}-\lvert q\rvert^{2},
+\end{equation}
+
+即干扰源位于 $qp$ 中垂线上 $q$ 的一侧。该约束不含任何近似。
+
+\textbf{(iii) 清除失败排除盘（非凸）}：返回 \verb|no_target_in_range|
+$\Rightarrow\lvert x-p\rvert>20$ 米。
+
+据此，频道 $c$ 的可行集为若干凸约束之交减去若干排除盘。为兼顾精度与非凸性，
+按频道状态取两种表示：\textbf{未探测}频道（从未收到信号）用步长 $h=20$ 米的
+栅格布尔掩码表示，只有整格落入排除盘才划掉，即要求格心距
+$\le 1000-h/\sqrt2=985.86$ 米；\textbf{已探测}频道用凸多边形表示，
+非凸排除盘按下述方式保守线性化。
+
+\textbf{本文所有近似一律偏向“集合更大”一侧}：维护的集合必须是真实可行集的超集，
+一旦偏向子集侧，真源即可能被排除，“确保清除”便失去依据。
+
+在此基础上，结论由三条命题支撑。
+
+\begin{theorem}[集员估计的超集性]
+\label{thm:p3contain}
+在假设 (1)(3) 成立的前提下，对每个存在干扰源的频道 $c$，
+算法在任一时刻维护的可行集 $\Omega_c$ 均包含该源的真实位置 $G_c$。
+\end{theorem}
+
+\begin{proof}
+$\Omega_c$ 的初值为目标圆域，含 $G_c$。此后 $\Omega_c$ 只通过两种方式变化：
+与某集合求交，或挖去某集合。故只需证明\textbf{每个被交的集合都含 $G_c$}、
+\textbf{每个被挖的集合都不含 $G_c$}，再对观测序列作归纳即可。逐项验证如下。
+
+被交的集合有三类。楔形：报数 $=\mathrm{round}(\theta+\varepsilon,2)$，
+其中 $\lvert\varepsilon\rvert\le 1^\circ$（假设 (1)），舍入残差不超过 $0.005^\circ$，
+故真实方位与报数之差不超过 $1.005^\circ=\delta$，楔形按报数 $\pm\delta$ 构造，
+必含真实方位。圆盘的外切多边形：每条切线可写为 $n\cdot x\le R+n\cdot c$（$\lvert n\rvert=1$），
+而 $\lvert x-c\rvert\le R$ 时 $n\cdot(x-c)\le\lvert x-c\rvert\le R$，故外切多边形含圆盘。
+序约束：由式 \eqref{eq:p3order}，该半平面与几何条件等价，不含近似。
+
+被挖的集合有两类。栅格方格：格内任一点到格心的距离不超过半对角线 $h/\sqrt2$，
+故格心距排除中心不超过 $1000-h/\sqrt2$ 时，整格均在排除盘内，
+其中不含满足式 \eqref{eq:p3exclude} 的点。非凸排除盘的线性化：
+取 $u$ 为排除中心 $q$ 指向多边形形心的单位向量，将多边形上的点分解为
+轴向分量 $t=u\cdot(x-q)$ 与横向分量 $s$。当 $t>0$ 时
+$\sqrt{t^{2}+s^{2}}\le t+s^{2}/(2t)$，故
+
+\begin{equation}
+  \label{eq:p3lin}
+  \lvert x-q\rvert>1000\ \Longrightarrow\
+  t\ >\ 1000-\frac{s_{\max}^{2}}{2\,t_{\min}},
+\end{equation}
+
+右端即算法所取阈值。被该半平面挖去的部分因此是
+$\{\lvert x-q\rvert\le 1000\}$ 的子集，不含真源。
+\textbf{式 \eqref{eq:p3lin} 中的修正项 $s_{\max}^{2}/(2t_{\min})$ 不可省略}，
+否则挖去的范围会越过真实排除盘，可能剔除真源。清除失败盘同理。
+\end{proof}
+
+\begin{theorem}[一次清除必定成功]
+\label{thm:p3clear}
+设 $R_{\min}(\Omega_c)\le 20$ 米，则机器狗走到 $\Omega_c$ 最小覆盖圆的圆心
+执行清除必定成功。
+\end{theorem}
+
+\begin{proof}
+由定理 \ref{thm:p3contain}，$G_c\in\Omega_c$；由最小覆盖圆的定义，
+$\Omega_c$ 中每一点到圆心的距离不超过 $R_{\min}(\Omega_c)\le 20$ 米，
+故 $\lvert G_c-\text{圆心}\rvert\le 20$ 米，落在清除半径内。
+（栅格化计算 $R_{\min}$ 时另加半格对角线作保守修正，保证所报值仍是上界。）
+\end{proof}
+
+\begin{theorem}[判空的正确性]
+\label{thm:p3empty}
+若频道 $c$ 的判空栅格残余为空，则目标圆域内不存在该频道的干扰源。
+\end{theorem}
+
+\begin{proof}
+栅格方格中心取至 $\lvert\text{心}\rvert\le R+h/\sqrt2$，故目标圆域内每一点
+都落在某个方格内。由定理 \ref{thm:p3contain} 的证明，被划掉的方格内不含
+满足全部无信号约束的点。残余为空即所有方格均被划掉，
+故圆域内不存在可行位置；又假设 (3) 要求干扰源必在圆域内，故该频道无源。
+\end{proof}
+
+三条命题合起来即给出\textbf{退出准则}：当每个频道要么已清除、要么判空栅格为空时，
+全部干扰源均已被清除。需要强调，该结论成立的前提是假设 (1) 与题目给定的
+$R_{\mathrm{eff}}\ge 1000$ 米，\textbf{并非无条件保证}。
+
+\subsubsection{一体化滚动时域策略}
+
+策略分三层。\textbf{信念层}为每个频道维护上述可行集与判空掩码；
+\textbf{动作层}在一个停靠点上把该处值得测的频道一次测完，条件满足即清除；
+\textbf{路线层}把“待清除点、待补测点、判空锚点”放进同一个开放巡回问题排序，
+采用滚动时域，只执行第一段后重新规划。算法 \ref{alg:p3main} 给出主循环。
+
+需注意题目未设独立的移动指令，移动由 \verb|/measure| 或 \verb|/clear| 的位置参数体现，
+故“走到某处”在实现上必然表现为“在某处执行一次检测或清除”。
+
+\begin{algorithm}[H]
+\caption{全向干扰源的一体化搜索定位清除策略}
+\label{alg:p3main}
+\begin{algorithmic}[1]
+\Require 机器狗接口 \texttt{enter}/\texttt{measure}/\texttt{clear}/\texttt{exit}
+\Ensure 每个频道要么已清除，要么已判空
+\State 调用 \texttt{enter}；对 $c=1,\dots,20$ 初始化 $\Omega_c\gets D(O,R)$，掩码 $M_c\gets$ 全部方格
+\While{存在频道 $c$ 既未清除也未判空}
+  \State $x\gets$ 当前位置
+  \If{现实剩余时间 $<$ 留白} \State \textbf{break} \Comment{防超时}
+  \EndIf
+  \If{未探测池非空 \textbf{且} 在 $x$ 处整池扫描划算}
+    \State 对池内每个频道执行 \texttt{measure}$(x,c)$ 并更新信念；\textbf{continue}
+  \EndIf
+  \If{存在已探测频道 $c$ 使 $R_{\min,c}>$ 盲清阈值 \textbf{且} 在 $x$ 处补测划算}
+    \State \texttt{measure}$(x,c)$ 并更新信念；\textbf{continue}
+  \EndIf
+  \If{存在频道的清除点就在当前位置}
+    \State \texttt{clear}$(x,c)$ 并更新信念；\textbf{continue}
+  \EndIf
+  \State $\mathcal{T}\gets\varnothing$ \Comment{构造任务表}
+  \ForAll{已探测未清除的频道 $c$}
+    \If{$R_{\min,c}\le 20$ 或（$R_{\min,c}\le$ 盲清阈值 且 盲清次数未超上限）}
+      \State $\mathcal{T}\gets\mathcal{T}\cup\{(\text{清除},\ \text{最小覆盖圆心},\ c)\}$
+    \Else
+      \State $\mathcal{T}\gets\mathcal{T}\cup\{(\text{补测},\ \text{正横补测点},\ c)\}$
+    \EndIf
+  \EndFor
+  \If{$\bigcup_c M_c\neq\varnothing$}
+    \State 以 $\mathcal{T}$ 的开放巡回为参照路线，按“覆盖每米”贪心补判空锚点并加入 $\mathcal{T}$
+  \EndIf
+  \State 对 $\mathcal{T}$ 求开放巡回，\textbf{仅执行排序后的第一个任务}（含移动）
+\EndWhile
+\State 调用 \texttt{exit}
+\end{algorithmic}
+\end{algorithm}
+
+算法第 5--15 行均为\textbf{零移动成本}动作，故先做完再考虑移动。
+真正的设计集中在四个判据上，每个判据都对应一笔代价与收益的比较。
+
+\paragraph{判据一：是否在此处整池扫描。}
+代价为 $\lvert\text{池}\rvert(t_m+t_s)$，收益是省下一趟专程锚点。
+把收益折算为“覆盖了本应由一个锚点覆盖的那份残余”，得自归一化判据
+
+\begin{equation}
+  \label{eq:p3scan}
+  \text{新增覆盖格数}\ \ge\ \zeta\cdot\frac{\text{当前残余格数}}{\text{还需锚点数}} .
+\end{equation}
+
+残余越小、还需锚点越少，门槛自动抬高，避免收尾阶段为少量残余反复扫描。
+
+\paragraph{判据二：是否在此处补测某个已探测频道。}
+先作\textbf{预演}：假设在该处收到信号且示向度指向可行集形心，把楔形裁到当前多边形上，
+得预期新直径。但仅此不够——可行集可能远在千米之外，测了多半返回无信号。
+故需估计\textbf{保证收信的把握}：对可行集中的候选位置 $x$，只要
+
+\begin{equation}
+  \label{eq:p3recv}
+  \lvert q-x\rvert\ \le\ \max\Bigl(1000,\ \max_{s\in S_c}\lvert s-x\rvert\Bigr),
+\end{equation}
+
+就必定能在 $q$ 处收到其信号（依据同式 \eqref{eq:p3order}：每个曾收到信号的点
+都给出 $R_{\mathrm{eff},c}$ 的一个下界）。对可行集撒点取满足式 \eqref{eq:p3recv}
+的比例 $p_{\text{收}}$，即得收信概率的一个下界，\textbf{不需要假设 $R_{\mathrm{eff}}$ 的分布}。
+判据遂写成期望相对收缩
+
+\begin{equation}
+  \label{eq:p3refine}
+  p_{\text{收}}\cdot\Bigl(1-\frac{\text{预演新直径}}{\text{当前直径}}\Bigr)\ \ge\ 1-\gamma .
+\end{equation}
+
+单源问题中第二个检测点总落在保证收信透镜域内，无须考虑此项；
+问题三的可行集可长达 $1500$ 米，正横补测点很容易落到接收范围之外。
+消融实验表明这一项价值 $255$ 秒（\ref{sssec:p3result} 节表 \ref{tab:p3ablation}）。
+
+\paragraph{判据三：补测点的位置。}
+沿用问题二的正横规则并推广：新楔形须横切可行集的长轴才有效。设可行集的直径点对
+为 $(A,B)$、半长 $\Lambda=\lvert AB\rvert/2$、最小覆盖圆心为 $O_{\min}$，取
+
+\begin{equation}
+  \label{eq:p3refpt}
+  q=A+\lambda(B-A)\ \pm\ \max(\kappa\Lambda,\ 12\ \text{米})\cdot\boldsymbol{e}_\perp,
+\end{equation}
+
+$\boldsymbol{e}_\perp$ 为长轴的单位法向，符号取靠近机器狗的一侧。候选点按
+$\bigl(\lvert x-q\rvert+\lvert q-O_{\min}\rvert\bigr)/v+t_m+\text{罚项}$ 评分，
+其中第一项即问题二中的“绕路”——补测点不是终点，测完仍需走到可行集中心执行清除。
+
+\paragraph{判据四：判空锚点的选取。}
+残余区需由若干锚点的排除盘覆盖，锚点集用贪心求解，\textbf{关键在贪心的评分函数}。
+若按“新排除面积最大”贪心（集合覆盖的标准做法），所选锚点为避免重叠而彼此远离，
+巡回被显著拉长。本文改用\textbf{“覆盖每米”}准则：
+
+\begin{equation}
+  \label{eq:p3anchor}
+  \text{得分}(p)=\frac{\text{新排除方格数}(p)}{L_0+\Delta(p)},\qquad
+  \Delta(p)=\min_{(a,b)\in\text{路线}}\bigl(\lvert ap\rvert+\lvert pb\rvert-\lvert ab\rvert\bigr),
+\end{equation}
+
+其中 $\Delta(p)$ 为把 $p$ 插入当前规划路线的最小增量长度，$L_0$ 为尺度常数。
+这一改动把覆盖问题与巡回问题\textbf{耦合}起来：锚点不是先选定再排序，
+而是按“每多走一米能排除多少面积”来选。$24$ 局配对实测，
+该准则相对“覆盖最大”的配对差为 $-291.3\pm60.1$ 秒（$t=-4.85$，$20/24$ 局改善），
+\textbf{节省的时间几乎全部来自移动}（$2560\to2333$ 秒），检测次数基本不变。
+
+\paragraph{终止性。}
+每一轮循环至少推进下列之一：某频道被清除（至多 $20$ 次）、某 $M_c$ 的方格数严格减少
+（有限）、某 $\Omega_c$ 的面积严格减少（正横补测保证收缩比有正下界）、
+或一次失败清除挖去 $\Omega_c$ 的一块（盲清次数设有上限）。
+加之动作数上限与现实时间闸，循环必然结束。
+
+\paragraph{参数。}
+策略含 $\zeta,\gamma$ 等九个可调量。由于单局总时间的标准差达 $239$ 秒
+（$40$ 局均值标准误 $38$ 秒），参数比较一律采用\textbf{公共随机数加逐局配对 $t$ 统计}，
+$\lvert t\rvert<2$ 按无差别处理。最终仅 $\zeta=1.40$ 与 $\gamma=0.50$ 达到显著，
+二者叠加后在\textbf{独立抽取的另一批 $40$ 局}上确认为 $-126.7\pm24.1$ 秒（$t=-5.27$）。
+其余七个参数的极差均在 $2\%$ 以内，
+\textbf{表明策略的表现由结构决定而非由参数凑出}。
+
+\subsubsection{数值结果}
+\label{sssec:p3result}
+
+本节全部结果取自 $40$ 局随机算例（源数 $10\sim16$ 等概率、位置圆域内均匀、
+$R_{\mathrm{eff}}\sim U[1000,1500]$、误差均匀独立，随机种子 $20260911$，平均源数 $13.2$）。
+
+\paragraph{两条参照线。}
+为判断策略离最优有多远，本文给出\textbf{性质不同的两条参照线}。
+\textbf{严格下界}对任何策略成立：行进不少于
+$\{O\}\cup\{G_c\}$ 的最小生成树长度（任何访问全部目标点的路径都是一棵生成树；
+又因清除半径为 $20$ 米，每条边可先削去 $2\times 20$ 米），
+加上每源一次清除 $5$ 秒与每个空频道 $7\times 5$ 秒检测，合计 $1785.7$ 秒。
+\textbf{全知参照}则假设一开始即知全部真值，沿 2-opt 巡回依次清除并顺路补齐判空锚点，
+合计 $2525.3$ 秒——它是一条\textbf{可行方案}的代价，
+因而是全知最优的上界而非下界，实测值与之相比的倍数\textbf{可能小于 $1$}。
+两条之比为 $0.707$，其间的差距绝大部分来自“最小生成树比巡回短”，并非可省的时间。
+
+值得注意的是，即便把 $13.2$ 个源位置全部走一遍，判空的覆盖平均\textbf{仍差 $2.42$ 个锚点}，
+巡回因此需增加约 $1750$ 米。这从数据上支持了策略的核心设计：
+顺路判空能省下大部分而非全部的锚点行程。
+
+\paragraph{策略对照。}
+为检验“一体化巡回”这一结构本身的价值，设置三个结构不同的对照方案：
+\textbf{先扫后清}（先走完判空锚点再 TSP 清除，信息与执行完全分离）、
+\textbf{逐源处理}（把问题二的单源方法套用 $13$ 遍）、
+\textbf{盲清搜索}（完全不用示向度，以 $20$ 米清除盘铺满圆域，解析估算）。
+结果见表 \ref{tab:p3compare}。
+
+\begin{table}[H]
+  \centering
+  \caption{问题三策略对照（$40$ 局平均，时间单位：秒）}
+  \label{tab:p3compare}
+  \begin{tabularx}{\textwidth}{Xcccccc}
+    \toprule
+    策略 & 清除率 & 总时间 & 平均定位清除时间 & /严格下界 & /全知参照 & 路程(米) \\
+    \midrule
+    全知参照（已知真值） & 1.0000 & 2525.3 & 194.8 & 1.414 & 1.000 & 10873 \\
+    \textbf{本文策略} & \textbf{1.0000} & \textbf{3296.1} & \textbf{254.2}
+      & \textbf{1.846} & \textbf{1.305} & \textbf{11869} \\
+    基线一：先扫后清 & 1.0000 & 5202.8 & 400.0 & 2.914 & 2.060 & 19533 \\
+    基线二：逐源处理 & 1.0000 & 4839.3 & 370.8 & 2.710 & 1.916 & 19992 \\
+    基线三：盲清搜索 & 1.0000 & 97246.8 & 7480.5 & 54.458 & 38.509 & 339309 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+四点结论。其一，\textbf{本文策略较两个结构不同的基线分别快 $36.6\%$ 与 $31.9\%$}，
+而三者的清除率均为 $1.0000$——差别在时间而非完成度。
+其二，本文策略为全知参照的 $1.305$ 倍，该倍数中已包含“不知道源在何处”所必需的
+全部探索代价，\textbf{不能读作“尚有 $30\%$ 可省”}。
+其三，\textbf{路程仅比全知参照多 $9.2\%$}（$11869$ 对 $10873$ 米），
+说明行进一项已接近极限，剩余差距主要在检测次数（$143.2$ 对 $46$ 次）。
+其四，盲清搜索需 $27.0$ 小时、$9795$ 个清除点，
+\textbf{示向度信息把任务缩短了两个数量级}——这说明问题三并非覆盖搜索问题，
+而是信息获取与路径规划的联合优化问题。
+
+图 \ref{fig:p3progress} 从过程侧给出同一结论：基线一在前 $3000$ 秒没有任何清除
+（正在走锚点巡回），本文策略的清除进度则自始连续爬升。
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[width=0.72\linewidth, height=5.6cm,
+      xlabel={虚拟时刻 (秒)}, ylabel={已清除干扰源数},
+      xmin=0, xmax=5200, ymin=0, ymax=14,
+      legend pos=north west, legend style={font=\small}, grid=major]
+      \addplot[const plot, thick, red!80!black]
+        table[x=虚拟时刻, y=已清除, col sep=comma] {\datadir/问题三_进度_推荐.csv};
+      \addlegendentry{本文策略}
+      \addplot[const plot, thick, brown!70!black, dashed]
+        table[x=虚拟时刻, y=已清除, col sep=comma] {\datadir/问题三_进度_逐源.csv};
+      \addlegendentry{基线二：逐源处理}
+      \addplot[const plot, thick, blue!70!black, dotted]
+        table[x=虚拟时刻, y=已清除, col sep=comma] {\datadir/问题三_进度_先扫后清.csv};
+      \addlegendentry{基线一：先扫后清}
+    \end{axis}
+  \end{tikzpicture}
+  \caption{算例 A（$13$ 个源）上三种策略的清除进度。基线一在前 $3000$ 秒
+    处于锚点巡回阶段而无任何清除，本文策略把信息获取与清除执行合并在同一条路线上。}
+  \label{fig:p3progress}
+\end{figure}
+
+\paragraph{时间去向。}
+本文策略的虚拟时间分解为：移动 $2373.9$ 秒（$72.0\%$）、检测 $715.9$ 秒（$21.7\%$）、
+切换频道 $136.9$ 秒（$4.2\%$）、清除 $69.4$ 秒（$2.1\%$）。
+与问题二单源情形（移动占 $91\%$）相比，\textbf{检测占比由 $7\%$ 升至 $21.7\%$}，
+原因正是行进被 $20$ 个频道分摊而检测的 $5$ 秒不能分摊。
+\textbf{问题三的优化重心因此部分地由“少走路”转向“少测无用的频道”}。
+
+\paragraph{消融实验。}
+为回答“哪个设计在起作用”，逐项关闭各设计并在同一批算例上重跑，见表 \ref{tab:p3ablation}。
+
+\begin{table}[H]
+  \centering
+  \caption{问题三消融实验（$40$ 局平均；每行只关闭一个设计）}
+  \label{tab:p3ablation}
+  \begin{tabular}{lccc}
+    \toprule
+    关闭的设计 & 总时间(秒) & 相对完整策略 & 清除率 \\
+    \midrule
+    完整策略 & 3296.1 & --- & 1.0000 \\
+    关闭“保证收信”判据 & 3551.4 & $+7.7\%$ & 1.0000 \\
+    关闭就地补测（$\gamma=0$） & 3513.3 & $+6.6\%$ & 1.0000 \\
+    巡回退化为最近邻（无 2-opt） & 3506.8 & $+6.4\%$ & 1.0000 \\
+    关闭锚点预扣覆盖 & 3393.0 & $+2.9\%$ & 1.0000 \\
+    楔形半角取 $1.000^\circ$ & 3337.3 & $+1.3\%$ & 1.0000 \\
+    关闭盲清 & 3332.1 & $+1.1\%$ & 1.0000 \\
+    关闭顺路扫描 & 3329.8 & $+1.0\%$ & 1.0000 \\
+    关闭接收半径序约束 & 3316.9 & $+0.6\%$ & 1.0000 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+八项均为正贡献。\textbf{真正起主要作用的是检测侧的两项}——“保证收信”判据
+（$+255$ 秒）与就地补测（$+217$ 秒），合计占总时间的 $14\%$；
+其次是路线侧的 2-opt（$+211$ 秒）与锚点预扣覆盖（$+97$ 秒）。
+\textbf{所有配置的清除率均为 $1.0000$}：完备性由退出准则保证，与这些设计无关，
+它们只影响到达退出条件所需的时间。
+
+余下四项的增量在 $20\sim41$ 秒之间，处于一个标准误（$38$ 秒）量级，
+本文据此\textbf{不将其作为策略优势宣称}，仅说明其无害。其中两项值得说明：
+接收半径序约束在推导上精确且无近似，但实际贡献接近噪声——因为轮到它起作用时
+楔形之交已将可行集压得很小，故本文将其定位为\textbf{模型完整性}的一部分；
+顺路扫描的收益在锚点准则改为“覆盖每米”之后被大幅替代，
+参数搜索亦从另一侧印证了这一点（$\zeta$ 的最优值被推高至 $1.4$），
+\textbf{二者是替代关系而非叠加关系}。
+
+\paragraph{分组统计。}
+按真实源数与干扰源布局分组的结果见表 \ref{tab:p3group}。
+
+\begin{table}[H]
+  \centering
+  \caption{问题三分组统计（左：按源数，$40$ 局；右：按布局，每种 $20$ 局）}
+  \label{tab:p3group}
+  \begin{tabular}{ccc@{\hskip 0.5cm}cccc}
+    \toprule
+    源数 & 总时间(秒) & 平均/源(秒) & 布局 & 总时间(秒) & 平均/源(秒) & /全知参照 \\
+    \midrule
+    10 & 3312.2 & 331.2 & 均匀 & 3265.4 & 247.7 & 1.300 \\
+    12 & 3321.7 & 276.8 & 贴边 & 3796.8 & 297.4 & 1.445 \\
+    13 & 3184.8 & 245.0 & 内圈 & 2710.6 & 207.8 & 0.964 \\
+    15 & 3389.6 & 226.0 & 聚集 & 2852.1 & 220.6 & 1.187 \\
+    16 & 3261.3 & 203.8 & --- & --- & --- & --- \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+总时间几乎与源数无关（$3185\sim3486$ 秒），
+故\textbf{平均定位清除时间随源数单调下降}（$331.2\to203.8$ 秒/源）：
+源多则空频道少、判空开销小，而巡回长度由区域尺度决定，不随源数线性增长。
+\textbf{这一点在解读题目要求的“平均定位清除时间”时必须注意}——
+该指标本身依赖于案例的源数，跨测试横向比较时应同时报告源数。
+
+布局方面，“内圈”一档实测值\textbf{小于全知参照}（$0.964$）。
+这并不矛盾：如前所述全知参照是可行方案的代价而非下界，
+该档相对严格下界仍为 $1.4$ 倍以上。四种布局的清除率均为 $1.0000$。
+
+图 \ref{fig:p3shrink} 给出可行集的收缩速度，与问题一、二的理论一致：
+一条示向度读数把不确定范围由千米量级压至数百米，两条压到 $20\sim30$ 米
+（恰在清除半径门槛附近），三条即可进入清除半径。
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[width=0.66\linewidth, height=5.2cm,
+      xlabel={该频道的第几条有效示向度读数}, ylabel={$R_{\min}$ (米)},
+      ymode=log, xmin=0.5, xmax=3.5, xtick={1,2,3},
+      legend pos=south west, legend style={font=\small}, grid=major]
+      \addplot[only marks, mark=*, mark size=1.5pt, blue!70!black]
+        table[x=第几条有效读数, y=Rmin, col sep=comma]
+        {\datadir/问题三_收缩散点.csv};
+      \addlegendentry{各频道实测}
+      \addplot[thick, red] coordinates {(0.5,20) (3.5,20)};
+      \addlegendentry{清除半径 $20$ 米}
+    \end{axis}
+  \end{tikzpicture}
+  \caption{算例 A 中各频道可行集最小覆盖圆半径随有效示向度读数条数的收缩。
+    两条读数后的 $R_{\min}$ 集中在清除半径附近，故第三条读数通常是必需的。}
+  \label{fig:p3shrink}
+\end{figure}
+
+\subsubsection{模型检验}
+
+\paragraph{检验什么。}
+“确保清除”这一结论由定理 \ref{thm:p3contain}--\ref{thm:p3empty} 支撑，
+而定理 \ref{thm:p3contain} 的证明已把全局命题\textbf{归结为八条互相独立的局部引理}
+（楔形含真值、外切多边形含圆盘、序约束、排除盘线性化、整格排除、
+细网格残余、$R_{\min}$ 为上界、栅格覆盖圆域）。
+因此检验的主体不是“多跑几局看看对不对”，而是\textbf{逐条核实这八条引理}。
+这样做既快且强：每条引理只依赖自身的几个参数，可脱离策略对参数空间密集扫描，
+覆盖的是\textbf{参数空间本身}而非“策略碰巧走到的构型”。
+八条引理各扫 $2\times10^{5}$ 个样本点，全部通过，反例为 $0$，耗时 $6$ 秒。
+
+\paragraph{判别性对照。}
+为证明上述检验并非走过场，对其中的关键项分别设置对照，见表 \ref{tab:p3lemma}。
+
+\begin{table}[H]
+  \centering
+  \caption{关键引理的判别性对照}
+  \label{tab:p3lemma}
+  \begin{tabular}{llcc}
+    \toprule
+    引理 & 对照设置 & 反例数 & 占比 \\
+    \midrule
+    排除盘线性化 & 保留式 \eqref{eq:p3lin} 的修正项 & 0 / 78191 & $0\%$ \\
+                 & 去掉修正项 & 379 / 78191 & $0.48\%$ \\
+    整格排除 & 格心距 $\le 1000-h/\sqrt2$（本文） & 0 / 200000 & $0\%$ \\
+             & 格心距 $\le 1000$（不留裕度） & 123 / 200000 & $0.06\%$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+两处修正项各自只在极窄的一圈内起作用，\textbf{端到端抽样难以命中}，
+而对着引理直接构造反例则一击即中。本文正是通过这一方式发现了实现中的两处缺陷。
+
+\paragraph{集成检验与变异测试。}
+引理证明覆盖不到的是“各条约束是否被正确地串接”（顺序、缓存、异常分支），
+这只能端到端运行。为此按题面重写一个独立的可行性判据
+（不调用被测代码，把“存在 $R_{\mathrm{eff}}\in[1000,1500]$ 同时满足全部距离约束”
+写成一条存在性条件，一次性包含序约束、排除盘与外界），
+在每次检测、每次清除之后立即断言真源仍在可行集内；被判空的频道另核对其确实无源。
+$12$ 局共 $1624$ 次断言，\textbf{违规 $0$，误判空 $0$}；
+另在过程中取 $45$ 个快照、每个在该频道的可行域附近撒 $3000$ 点
+（合计 $13.5$ 万点）比对两套判据，\textbf{“按定义可行但被模型排除”者为 $0$}，
+模型可行集与定义可行集的点数比中位数为 $1.018$（保守余量仅 $1.8\%$）。
+
+此外植入 $7$ 个错误检验上述断言是否真的抓得住错误，结果见表 \ref{tab:p3mutation}。
+其中\textbf{阴性对照}（故意少加两条约束，只会使可行集偏大）正确地未报警；
+“取消保守修正”一项整局仿真撞不上，其判据在引理层（表 \ref{tab:p3lemma} 第 4 行，
+去掉修正后 $379/78191$ 次被错误裁掉）。两项细节值得一提：
+将 $\delta$ 由 $1.005°$ 降为 $1.000°$ 在 $20$ 局中仅报 $1$ 局，
+与“单次检测约 $0.125\%$”的估计吻合，说明低概率缺陷必须靠足量样本才抓得住；
+序约束方向写反使清除率跌至 $0.0071$，说明该约束并非可有可无。
+
+\begin{table}[H]
+  \centering
+  \caption{问题三变异测试：向模型植入错误后复核层是否报警}
+  \label{tab:p3mutation}
+  \begin{tabular}{lcccc}
+    \toprule
+    植入的错误 & 类别 & 出错局数 & 违规次数 & 是否报警 \\
+    \midrule
+    （基准，无变异） & 基准 & $0/10$ & $0$ & 否（应当如此） \\
+    楔形半角 $1.005°\to1.000°$ & 阳性 & $1/20$ & $2$ & 是 \\
+    楔形半角 $\to0.90°$ & 阳性 & $10/10$ & $146$ & 是 \\
+    判空排除半径 $\times1.2$ & 阳性 & $7/10$ & $28$ & 是 \\
+    序约束方向反转 & 阳性 & $10/10$ & $58$ & 是 \\
+    取消排除盘线性化的保守修正 & 引理层 & $0/10$ & $0$ & 见表 \ref{tab:p3lemma} \\
+    漏加两条约束（阴性对照） & 阴性 & $0/10$ & $0$ & 否（应当如此） \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{以官方模拟器反验代价模型。}
+将三次正式测试的日志按题目附件给定的规则独立重算虚拟时钟，与模拟器返回值逐条比对，
+\textbf{最大差 $1.8\times10^{-6}$ 秒}。这一条保证了离线统计与正式测试同口径，
+表 \ref{tab:p3compare} 的对照因而有意义。
+
+\paragraph{赛后复核：由日志重建退出状态。}
+模拟器不返回真值，但日志包含全部指令与响应。将其按原顺序重放进信念模型，
+可重建退出时刻的状态并核对等式“已清除频道数 $+$ 判空频道数 $=20$”，
+成立才说明退出时每个频道都有依据。
+
+该检验在三次正式测试上发现：仅第二次成立（$13+7=20$），
+另外两次退出时分别还有 $10$ 个与 $9$ 个频道既未清除也未判空，
+各自仅剩 $800$ 与 $400$ 平方米的未排除区域（占目标圆域的 $0.008\%$ 与 $0.004\%$）。
+根因是判空锚点的规划使用 $40$ 米子点阵而判空判据使用完整 $20$ 米栅格，
+当残余仅剩一两格且恰不在子点阵上时规划器返回空表，主循环随之退出。
+\textbf{离线复测该情形的发生率达 $41.7\%$，而清除率始终为 $1.0000$}——
+这恰说明只看清除率不足以验证完备性。
+修正方法是将规划时的覆盖半径再收紧 $\sqrt2 h=28.3$ 米，
+使“子点阵按收紧半径覆盖”蕴含“完整栅格按真半径覆盖”。
+修正后离线 $40$ 局的未决频道为 $0/40$，
+且平均总时间由 $3330.8$ 秒降至 $3296.1$ 秒——\textbf{补齐完备性未付出时间代价}。
+
+\paragraph{灵敏度与稳健性。}
+凡题目未规定而由本文假设者均替换重跑，共 $705$ 局（每档 $30$ 局）：
+误差分布换为三角分布、最坏 $\pm\delta$ 与相关长度 $300$/$1000$ 米的空间相关场，
+时间波动仅 $2.8\%$；干扰源布局换为贴边、内圈、聚集，极差 $+12.4\%/-14.1\%$；
+干扰源个数由 $10$ 增至 $16$，总时间升 $8.6\%$ 而\textbf{平均定位清除时间由
+$316.2$ 秒单调降至 $214.5$ 秒}（判空的固定开销被更多的源分摊，
+这正是一体化设计的直接证据）；$R_{\mathrm{eff}}$ 分布换为全取下界、全取上界与
+$U[1000,1200]$，极差 $10.3\%$；楔形半角 $\delta$ 取 $1.000°\sim1.500°$，极差 $2.0\%$。
+\textbf{上述全部情景的清除率均为 $1.0000$，且退出时的未决频道数全部为 $0$}
+——集员估计只用到确界，不依赖分布形态。
+
+作为压力测试，人为下调 $R_{\mathrm{eff}}$ 的真实下界（判空的全部依据）：
+下界为 $950$ 米时清除率仍为 $1.0000$，$900$ 米时降至 $0.929$，$800$ 米时 $0.727$。
+退化是渐进而非断崖式的。值得注意的是，此时的失效方式是\textbf{未决}
+（退出时分别有 $36$ 与 $105$ 个频道既未清除也未判空）而非错误判空；
+但这不能反过来说明排除盘画大了仍安全——一旦 $R_{\mathrm{eff}}<1000$，
+定理 \ref{thm:p3empty} 的前提即不成立，判空不再有保证。
+题目正文与附件均明确给出 $1000$ 米，故基准档才是实际情形；
+此处的意义在于说明\textbf{该假设一旦失真会如何失效}，
+以及应对方式（调小排除半径，代价是判空锚点增多）。
+
+程序运行时间方面，$20$ 局单局平均 $2.72$ 秒、最大 $4.98$ 秒，
+占正式测试 $1200$ 秒预算的 $0.4\%$；三次正式测试实测为 $1.63$、$2.22$、$1.98$ 秒，
+与离线同量级。计算不构成瓶颈。
+
+\subsubsection{正式测试结果}
+
+按题目要求，在充分演练测试后进行三次正式测试，结果见表 \ref{tab:p3official}。
+
+\begin{table}[H]
+  \centering
+  \caption{问题三正式测试结果}
+  \label{tab:p3official}
+  \begin{tabular}{lccc}
+    \toprule
+    测试 & 测试案例编码 & 清除干扰源个数 & 平均定位清除时间(秒) \\
+    \midrule
+    测试 1 & （见支撑材料日志） & 10 & 267.3 \\
+    测试 2 & （见支撑材料日志） & 13 & 231.5 \\
+    测试 3 & （见支撑材料日志） & 11 & 333.6 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+三次测试的程序运行时间分别为 $1.63$、$2.22$、$1.98$ 秒。
+三局的干扰源总数分别为 $10$、$13$、$11$，故\textbf{被清除干扰源个数的比例
+三次均为 $100\%$}；三十四条清除指令全部命中，无一次空枪。
+
+关于两个统计量的口径需说明：比例的分母为干扰源总数，仅演练测试会在结束时告知，
+故表 \ref{tab:p3official} 只列清除个数；平均定位清除时间的分子取最后一次
+被接受响应的虚拟时刻，即整局虚拟时长，含第一次检测之前的移动与全部判空开销。
+又如 \ref{sssec:p3result} 节所述，该指标随源数下降，
+三次测试之间的横向差异有相当一部分来自源数不同（$10$、$13$、$11$）而非策略表现。
 
 \subsection{问题四：含定向干扰源时的检测与清除策略}
 
@@ -1238,6 +1920,71 @@ $-0.6\%$、$+2.0\%$、$-0.7\%\!\sim\!-0.2\%$，而“定位区域包含干扰源
 
 \begin{appendices}
 
+\section{支撑材料文件列表}
+\label{app:files}
+
+按《全国大学生数学建模竞赛论文格式规范》第五条与第十一条，支撑材料压缩包的文件清单如下。
+全部脚本均以仓库根目录为基准使用相对路径，固定随机种子，可在干净环境下直接运行复现本文全部数值结果。
+
+% 这张表比一页还长，必须用 longtable 允许跨页；用 table[H]+tabular 会直接溢出页面。
+\begin{longtable}{llp{6.6cm}}
+  \caption{支撑材料文件列表}\label{tab:files}\\
+    \toprule
+    目录 & 文件 & 内容 \\
+    \midrule
+  \endfirsthead
+    \multicolumn{3}{l}{\small（续表 \ref{tab:files}）}\\
+    \toprule
+    目录 & 文件 & 内容 \\
+    \midrule
+  \endhead
+    \bottomrule
+  \endlastfoot
+    \multirow{5}{*}{问题一}
+      & 生成算例.py & 构造三组算例，固定随机种子 $20260910$ \\
+      & 求解算法.py & 楔形取交、直径、覆盖判定与最小覆盖圆 \\
+      & 数值验证.py & 表 \ref{tab:p1result} 等数值结论的生成与校验 \\
+      & 独立复核.py & 由题面定义重推几何，交叉验证求解结果 \\
+      & 变异测试.py & 向算法注入典型缺陷，检验复核方案的检错能力 \\
+    \midrule
+    \multirow{8}{*}{问题二}
+      & 模型.py & 可行集、楔形取交、闭式公式与代价模型（公共底层） \\
+      & 理论验证.py & 式 \eqref{eq:p2d}--\eqref{eq:p2limit} 与各几何结论的逐条验证 \\
+      & 候选区域.py & $(a,b)$ 平面 $7120$ 格点扫描，两准则的目标函数面 \\
+      & 阶段数据.py & 效率前沿、边际分析与沿途增测对比的数据 \\
+      & 策略仿真.py & 复刻模拟器计时规则的端到端仿真与参数搜索 \\
+      & 策略对照.py & 理论下界、各策略对照与候选区域的逐点检验 \\
+      & 独立复核.py & 独立几何实现、最优性证书与变异测试 \\
+      & 重跑全部.py & 按依赖顺序重跑全部脚本，验证可复现性 \\
+    \midrule
+    \multirow{12}{*}{问题三}
+      & 公共.py & 频道信念（集员估计）、判空栅格、几何与巡回工具 \\
+      & 模拟器.py & 本地模拟器与 HTTP 后端，共用同一机器狗接口 \\
+      & 策略.py & 推荐策略、三个基线、严格下界与全知参照 \\
+      & 覆盖锚点.py & 判空的圆覆盖问题：$K^{*}=7$ 与最短覆盖巡回 \\
+      & 命题与引理.py & 三条命题的八条引理密集扫描与判别性对照 \\
+      & 独立复核.py & 集成检验与变异测试（判据由题面重写） \\
+      & 参数搜索.py & 公共随机数 $+$ 逐局配对 $t$ 的参数调优 \\
+      & 策略对照.py & 表 \ref{tab:p3compare}--\ref{tab:p3group} 的生成 \\
+      & 灵敏度.py & 误差模型、布局、源数、$R_{\mathrm{eff}}$ 与压力测试 \\
+      & 实战程序.py & 对接官方模拟器的机器狗程序（演练与正式测试共用） \\
+      & 复盘实战日志.py & 由正式测试日志重建退出状态并反验计时 \\
+      & 并行.py & 抽样类脚本共用的进程池与进度播报（不含模型逻辑） \\
+    \midrule
+    \multirow{4}{*}{数据与图}
+      & results/*.csv & 论文全部图表所引用的数据 \\
+      & notebooks/P3/实战日志\_*.csv & 三次正式测试的完整指令与响应记录 \\
+      & notebooks/P1/*.csv & 问题一算例与求解结果 \\
+      & notebooks/P2/*.csv & 问题二完整扫描数据与中间结果 \\
+    \midrule
+    \multirow{2}{*}{绘图与导出}
+      & 绘图.py、作图数据.py & 读 CSV 出图，不参与建模求解，故不在附录 \\
+      & 导出论文数据.py & 把作图数据按统一命名导出到 results/ \\
+      & 重跑全部.py、论文附录代码.py & 一键复跑与附录代码的自动抽取 \\
+    \midrule
+    结果记录 & *.txt & 各验证脚本的完整输出，含每个数值的出处与扫描参数 \\
+\end{longtable}
+
 \section{问题一的定理证明}
 \label{app:proof}
 
@@ -1276,119 +2023,54 @@ $\cos(30^\circ+\delta)/\cos(30^\circ-\delta)>\sqrt3-1$；在 $\delta=15^\circ$ �
 
 \section{核心代码}
 
-\begin{lstlisting}[language=Python, caption={楔形化为半平面并求交（问题一）}]
-def 楔形半平面(S, theta_deg, delta_deg):
-    “”“顶点 S、中心方向 theta、半角 delta 的楔形，返回其两个半平面 (a, b, c)，
-    含义为 a*x + b*y <= c。”“”
-    lo = np.radians(theta_deg - delta_deg)
-    hi = np.radians(theta_deg + delta_deg)
-    u_lo = (np.cos(lo), np.sin(lo))
-    u_hi = (np.cos(hi), np.sin(hi))
-    h1 = (u_lo[1], -u_lo[0], u_lo[1] * S[0] - u_lo[0] * S[1])
-    h2 = (-u_hi[1], u_hi[0], -u_hi[1] * S[0] + u_hi[0] * S[1])
-    return [h1, h2]
+% ======================================================================
+% 【暂时关闭】定稿前不把源码编进 PDF：一是正文尚在调整、代码还会变动，
+% 二是十几个 lstinputlisting 会把篇幅推到百页以上，不便打印校对。
+% 需要重新开启时，把本节内以「% [暂时注释]」开头的 \lstinputlisting 行
+% 取消注释即可（全文共 13 处，P1 五个、P2 七个、P3 一个抽取件）。
+% ======================================================================
 
+按《论文格式规范》第五条，建模与求解所用的全部源程序随支撑材料提交，
+清单见附录 \ref{app:files}。\textbf{本节的代码清单在定稿版中给出}，
+当前版本为便于校对暂未编入。
 
-def 求定位区域(检测点, 示向度, delta_deg):
-    “”“n 个楔形取交，返回 (顶点表, 状态)。”“”
-    if not 角区间交为空(示向度, delta_deg):
-        return [], “无界”
-    多边形 = [(-BOX, -BOX), (BOX, -BOX), (BOX, BOX), (-BOX, BOX)]
-    for S, th in zip(检测点, 示向度):
-        for a, b, c in 楔形半平面(S, th, delta_deg):
-            多边形 = 裁剪(多边形, a, b, c)
-            if not 多边形:
-                return [], “空”
-    return 去冗余(多边形), “多边形”
-\end{lstlisting}
+绘图与数据导出脚本（\texttt{绘图.py}、\texttt{作图数据.py}、\texttt{导出论文数据.py}、
+\texttt{重跑全部.py}）只负责读取求解脚本产生的 CSV 并出图，不参与建模求解，
+按惯例只置于支撑材料。全部脚本以仓库根目录为基准使用相对路径、固定随机种子，
+可在干净环境下直接运行并复现本文的全部数值结果。
 
-\begin{lstlisting}[language=Python, caption={直径与覆盖判定（问题一）}]
-def 求直径(顶点):
-    “”“凸多边形的直径必在顶点对取到（定理 2）。”“”
-    最大, 点对 = 0.0, None
-    for p, q in combinations(顶点, 2):
-        d = float(np.hypot(p[0] - q[0], p[1] - q[1]))
-        if d > 最大:
-            最大, 点对 = d, (p, q)
-    return 最大, 点对
+% [暂时注释] \lstinputlisting[language=Python, caption={P1/生成算例.py——问题一：算例生成}]{../notebooks/P1/生成算例.py}
 
+% [暂时注释] \lstinputlisting[language=Python, caption={P1/求解算法.py——问题一：楔形取交、直径与覆盖判定}]{../notebooks/P1/求解算法.py}
 
-def 覆盖判定(顶点, A, B):
-    “”“泰勒斯判据：V 在圆内或圆上 <=> (A-V)·(B-V) <= 0。”“”
-    A, B = np.asarray(A), np.asarray(B)
-    for V in 顶点:
-        if float(np.dot(A - np.asarray(V), B - np.asarray(V))) > 1e-7:
-            return False
-    return True
-\end{lstlisting}
+% [暂时注释] \lstinputlisting[language=Python, caption={P1/数值验证.py——问题一：数值结论的生成与校验}]{../notebooks/P1/数值验证.py}
 
+% [暂时注释] \lstinputlisting[language=Python, caption={P1/独立复核.py——问题一：由题面定义重推的独立复核}]{../notebooks/P1/独立复核.py}
 
-\begin{lstlisting}[language=Python, caption={一次检测后的可行集与最优侧移（问题二）}]
-def 先验区域(S1, theta1, delta, rho_lo=5.0, rho_hi=None, R=1800.0, 弧段数=6):
-    """可行集 Omega_1 = 楔形 ∩ {rho_lo < rho <= rho_hi} ∩ 目标圆盘。
-    外圈圆弧用切线外逼近，保证所得区域是真实可行集的超集（宁可高估不可漏）。"""
-    if rho_hi is None:
-        rho_hi = 距离上界(S1, theta1, delta, R)
-    多边形 = [(-BOX, -BOX), (BOX, -BOX), (BOX, BOX), (-BOX, BOX)]
-    半平面 = list(楔形半平面(S1, theta1, delta))
-    半平面 += 圆的外切半平面(S1, rho_hi, 弧段数, (theta1 - delta, theta1 + delta))
-    u = np.array([np.cos(np.radians(theta1)), np.sin(np.radians(theta1))])
-    半平面.append((-u[0], -u[1], -(rho_lo * np.cos(np.radians(delta)) + float(S1 @ u))))
-    半平面 += 圆的外切半平面((0.0, 0.0), R, 360)
-    for a, b, c in 半平面:
-        多边形 = 裁剪(多边形, a, b, c)
-        if not 多边形:
-            return []
-    return 去冗余(多边形)
+% [暂时注释] \lstinputlisting[language=Python, caption={P1/变异测试.py——问题一：复核方案的检错能力测试}]{../notebooks/P1/变异测试.py}
 
+% [暂时注释] \lstinputlisting[language=Python, caption={P2/模型.py——问题二：可行集、闭式公式与代价模型}]{../notebooks/P2/模型.py}
 
-def 最优侧移(rho, a):
-    """定理 3：b* = sqrt(|s|(rho+|s|))，s = rho - a。"""
-    s = np.abs(rho - a)
-    return np.sqrt(s * (rho + s))
+% [暂时注释] \lstinputlisting[language=Python, caption={P2/理论验证.py——问题二：各几何结论的逐条验证}]{../notebooks/P2/理论验证.py}
 
+% [暂时注释] \lstinputlisting[language=Python, caption={P2/候选区域.py——问题二：目标函数面扫描与候选区域}]{../notebooks/P2/候选区域.py}
 
-def 最优直径(rho, a, delta):
-    """定理 3：d_min = 2 tan(delta) (rho + 2|s|)。"""
-    s = np.abs(rho - a)
-    return 2.0 * np.tan(np.radians(delta)) * (rho + 2.0 * s)
-\end{lstlisting}
+% [暂时注释] \lstinputlisting[language=Python, caption={P2/阶段数据.py——问题二：效率前沿与边际分析}]{../notebooks/P2/阶段数据.py}
 
-\begin{lstlisting}[language=Python, caption={单源定位清除策略（问题二，对应算法 2）}]
-def 跑一局(sim, S1, theta1, LAM=0.30, MU=0.08, KAP=0.25, 频道=1, 最多检测=12):
-    """集员估计 + 代价加权的单源策略。sim 为复刻模拟器计时规则的本地仿真器。"""
-    rho_hi = 距离上界(S1, theta1, DELTA_算法)
-    Omega = 先验区域(S1, theta1, DELTA_算法, rho_hi=rho_hi)
-    目标 = 局部转全局((LAM * rho_hi, MU * rho_hi), S1, theta1)   # 侧移方向可取反
-    for _ in range(最多检测):
-        回 = sim.measure(目标, 频道)
-        if 回["measure_result"] == "near":
-            sim.clear(sim.位置, 频道)
-            return
-        if 回["measure_result"] == "direction":
-            新 = 定位区域(Omega, 目标, 回["svd_deg"], DELTA_算法)
-            if 新:
-                Omega = 新
-        d, R = 区域指标(Omega)[:2]
-        c = np.asarray(最小覆盖圆快(Omega)[0], dtype=float)
-        if R <= R_CLEAR:                      # 可一次清除，走到圆心清除
-            sim.clear(c, 频道)
-            return
-        目标 = 补测点(Omega, sim.位置, KAP)    # 在区域正横方向补测，横切长轴
+% [暂时注释] \lstinputlisting[language=Python, caption={P2/策略仿真.py——问题二：端到端仿真与参数搜索}]{../notebooks/P2/策略仿真.py}
 
+% [暂时注释] \lstinputlisting[language=Python, caption={P2/策略对照.py——问题二：理论下界与各策略对照}]{../notebooks/P2/策略对照.py}
 
-def 补测点(Omega, 位置, kappa):
-    """新楔形应横切当前区域长轴；侧移量取区域半长的 kappa 倍。
-    kappa 由式 (15) 的等效行程换算权衡得出，取 0.25。"""
-    D, (A, B) = 求直径快(Omega)
-    c = np.asarray(最小覆盖圆快(Omega)[0], dtype=float)
-    轴 = np.asarray(B, float) - np.asarray(A, float)
-    轴 = 轴 / max(float(np.hypot(*轴)), 1e-12)
-    n = np.array([-轴[1], 轴[0]])
-    if float(n @ (np.asarray(位置, float) - c)) < 0:
-        n = -n
-    return c + max(kappa * D / 2.0, 10.0) * n
-\end{lstlisting}
+% [暂时注释] \lstinputlisting[language=Python, caption={P2/独立复核.py——问题二：独立几何实现与变异测试}]{../notebooks/P2/独立复核.py}
+
+问题三的脚本共 $17$ 个计算求解文件（$4284$ 行）与 $1$ 个绘图文件（$542$ 行），
+全部置于支撑材料 \verb|notebooks/P3/|。定稿版的附录只收建模与求解的核心实现，
+该文件由 \verb|notebooks/P3/论文附录代码.py| 按函数名自动抽取生成，
+\textbf{与仓库中的源码始终一致}，不存在手工转抄造成的偏差。
+绘图脚本 \verb|绘图.py| 只读取 \verb|results/*.csv| 作图、不含任何建模计算，
+按惯例不列入附录。
+
+% [暂时注释] \lstinputlisting[language=Python, caption={P3——问题三：集员估计、判空栅格、覆盖每米锚点与主循环}]{../notebooks/P3/论文附录_问题三核心代码.py}
 
 \end{appendices}
 

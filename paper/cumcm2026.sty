@@ -73,7 +73,13 @@
   本参赛队在竞赛过程中使用了AI工具，主要用于#1，详细使用情况见支撑材料。
 }
 
+\usepackage{upquote}
+
+% upquote=true 必不可少: 否则 listings 会把直引号 " ' 排成弯引号 ” ’,
+% 评委从 PDF 复制出来的代码将无法运行。《论文格式规范》第五条明确
+% 「程序不能运行……都可能会被取消评奖资格」。
 \lstdefinestyle{cumcmcode}{
+  upquote=true,
   basicstyle=\ttfamily\small,
   numbers=left,
   numberstyle=\tiny\color{gray},
