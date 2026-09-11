@@ -1835,8 +1835,743 @@ $U[1000,1200]$，极差 $10.3\%$；楔形半角 $\delta$ 取 $1.000°\sim1.500°
 三次测试之间的横向差异有相当一部分来自源数不同（$10$、$13$、$11$）而非策略表现。
 
 \subsection{问题四：含定向干扰源时的检测与清除策略}
+\label{sec:p4}
 
-% TODO: 待完成。含 5.4.1 模型建立、5.4.2 算法设计、5.4.3 测试结果、5.4.4 模型检验。
+\subsubsection{新增因素与前三问结论的继承关系}
+
+问题四与问题三的题设只差一句：目标区域内\textbf{既有全向干扰源，又有定向干扰源}，
+定向源的个数与定向方向均未知。定向源的有效覆盖角度范围为定向方向两侧各 $90^\circ$（含）。
+
+这一句的影响并不均匀。前三问的结论有的原样成立，有的需要重新论证，其对应关系见表 \ref{tab:p4inherit}。
+
+本节沿用前三问的全部符号，另需四个只在本节出现的量，一并在此说明：
+$u_c$ 为频道 $c$ 的定向方向单位向量（全向源记 $u_c=\varnothing$）；
+$U_c(x)$ 为候选源位置取 $x$ 时定向方向的可行集（式 \eqref{eq:p4uset}）；
+$B_c(x)$ 为该位置下保证可收到信号的距离上界；
+$K_4$ 为围堵判空所需的检测点数。判空栅格由问题三的“方格”细化为
+“方格 $\times$ 方向扇区”，步长取 $h=40$ 米、扇区数取 $36$。
+
+\begin{table}[H]
+  \centering
+  \caption{前三问结论在问题四中的继承关系}
+  \label{tab:p4inherit}
+  \begin{tabularx}{\textwidth}{lXc}
+    \toprule
+    来源 & 结论 & 问题四 \\
+    \midrule
+    问题一 & 楔形取交、定位区域直径、最小覆盖圆；$R_{\min}\le R_c$ 为一次清除必成功的判据
+      & 成立 \\
+    问题一 & 定理 \ref{thm:clearable}：两检测点距源不超过 $770$ 米且张角 $90^\circ$ 即可清除
+      & 成立 \\
+    问题二 & 代价换算：一次检测等价于 $25$ 米行程（式 \eqref{eq:p2exch}）；正横侧移规则
+      & 成立 \\
+    问题三 & 一次停靠的行程被所有频道分摊、检测的 $5$ 秒不能分摊；一体化滚动时域巡回
+      & 成立 \\
+    问题三 & 式 \eqref{eq:p3exclude}：无信号 $\Rightarrow$ 距离超过 $1000$ 米（排除盘）
+      & \textbf{失效} \\
+    问题三 & 式 \eqref{eq:p3empty}：判空 $\iff$ 排除盘覆盖目标圆域；$K^{*}=7$
+      & \textbf{失效} \\
+    问题三 & 式 \eqref{eq:p3order}：接收半径序约束
+      & \textbf{失效} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+失效的三条同出一源。附件 2 第 2.2 节列出无信号的三种成因，问题四多出第三种：
+
+\begin{equation}
+  \label{eq:p4nosignal}
+  \texttt{no\_signal}\ \text{于}\ p
+  \ \Longrightarrow\
+  \underbrace{\lvert p-G_c\rvert>R_{\mathrm{eff},c}}_{\text{距离不够}}
+  \quad\textbf{或}\quad
+  \underbrace{(p-G_c)\cdot u_c<0}_{\text{在背面}},
+\end{equation}
+
+其中 $u_c$ 为频道 $c$ 的定向方向单位向量（全向源记 $u_c=\varnothing$，第二支恒不成立）。
+后一支对\textbf{位置}没有任何约束——干扰源可以就在脚下，只是背对着机器狗。因此
+
+\begin{equation}
+  \label{eq:p4noinfo}
+  \boxed{\ \text{问题四中一次无信号检测不排除任何位置。}\ }
+\end{equation}
+
+这不是精度下降，而是\textbf{依据消失}：问题三“一次无信号排除一个 $1000$ 米圆盘”
+在问题四中一个字都不成立，判空的整套论证必须重做。
+连 \verb|near| 的语义也随之改变：站在定向源背面一米处得到的是 \verb|no_signal| 而非 \verb|near|。
+
+其余不受影响的部分中，有一条需要特别指出：\textbf{清除操作与覆盖角无关}
+（附件 2 第 8.2 节明文规定，只要目标频道的干扰源距清除位置不超过 $20$ 米即可清除）。
+因此定理 \ref{thm:p3clear} 原样成立，\textbf{一旦定位成功，清除环节与问题三完全相同}。
+这也使得“盲清”在问题四中比问题三更有价值：检测可能因角度而落空，开枪不会。
+
+\subsubsection{覆盖角的几何：半平面及其三条推论}
+
+全部新结论由题面一句不起眼的话推出。“两侧各 $90^\circ$”合起来恰为 $180^\circ$，故
+
+\begin{equation}
+  \label{eq:p4half}
+  \text{有效覆盖范围}
+  =\{x:\ \angle(x-G,\,u)\le 90^\circ\}
+  =\{x:\ (x-G)\cdot u\ge 0\},
+\end{equation}
+
+这是一个\textbf{过干扰源的闭半平面}，而非一般扇形。
+半平面\textbf{是凸集}且\textbf{含 $G$}——问题四的每一条结论都只用这两个性质。
+需要强调：$180^\circ$ 并非可以放宽的参数。若覆盖角大于 $180^\circ$，覆盖范围非凸，
+下述引理 \ref{lem:p4cone} 立即失效；若小于 $180^\circ$，引理 \ref{lem:p4mirror} 失效。
+
+\begin{lemma}[收信锥]
+\label{lem:p4cone}
+若频道 $c$ 在 $p_1,\dots,p_k$ 处均收到信号，则
+$G_c+\operatorname{cone}\{p_1-G_c,\dots,p_k-G_c\}$ 整体落在覆盖角范围内。
+\end{lemma}
+
+\begin{proof}
+由式 \eqref{eq:p4half}，$(p_i-G_c)\cdot u_c\ge 0$。任取 $\lambda_i\ge0$，
+则 $\bigl(\sum_i\lambda_i(p_i-G_c)\bigr)\cdot u_c\ge 0$。
+\end{proof}
+
+引理 \ref{lem:p4cone} 回答“换个角度再测会不会绕到背面”。
+$k=1$ 时该锥退化为射线 $G_c\to p_1$：\textbf{只有沿着已测方位线才是保证收得到的}，
+而沿方位线再测一次几乎不带来新的几何信息。这正是问题四中补测的两难所在。
+下述引理给出了化解方式。
+
+\begin{lemma}[镜像必达]
+\label{lem:p4mirror}
+设频道 $c$ 在 $p$ 处收到信号、在 $q$ 处未收到，且已知 $\lvert q-G_c\rvert\le R_{\mathrm{eff},c}$，
+则对任意 $\lambda>0$，点 $r=p+\lambda(p-q)$ 必落在覆盖角范围内。
+\end{lemma}
+
+\begin{proof}
+$q$ 在接收距离内却未收到，由式 \eqref{eq:p4nosignal} 必为角度原因，即 $(q-G_c)\cdot u_c<0$；
+$p$ 处收到则 $(p-G_c)\cdot u_c\ge 0$。于是
+\begin{equation*}
+  (r-G_c)\cdot u_c=(1+\lambda)(p-G_c)\cdot u_c-\lambda\,(q-G_c)\cdot u_c
+  \ \ge\ 0+\lambda\cdot(\text{正数})\ >\ 0. 
+\end{equation*}
+\end{proof}
+
+\textbf{该结论中不含 $G_c$}：无需知道干扰源在何处，仅凭“在 $p$ 收到、在 $q$ 未收到”
+即可算出一个保证收得到的点。它把“换个角度再测一次”的\textbf{最坏代价钉死在两次检测}：
+第一次可取较大的侧移角以求几何效果，万一落空，第二次走镜像点必定收到。
+
+使用时需注意引理锚定在 $p$ 上。若补测点是绕可行集长轴生成、与 $p$ 无关，
+则 $2p-q$ 可能远超接收距离，前提不再成立。因此本文把候选点直接\textbf{以 $p$ 为锚}构造：
+
+\begin{equation}
+  \label{eq:p4pair}
+  q_\pm=p\pm t\,n_p,\qquad n_p\perp\text{（在 $p$ 测得的示向度方向）},
+\end{equation}
+
+$q_+$ 与 $q_-$ 天然互为镜像，且 $\lvert q_\pm-G_c\rvert=\sqrt{d^2+t^2}$ 相等，
+“其一在接收距离内”自动蕴含“另一在接收距离内”，引理的前提无需另行验证。
+
+\subsubsection{停止准则的重建：由圆覆盖到半圆盘围堵}
+
+由式 \eqref{eq:p4noinfo}，问题三的判空判据式 \eqref{eq:p3empty} 不可用。
+重建的办法是把“频道 $c$ 在位置 $x$ 有源”这一假设的\textbf{全部自由变量}写出来
+——定向方向 $u$（或“全向”）与接收半径 $R_{\mathrm{eff}}$——再要求对每一组都能导出矛盾。
+取 $R_{\mathrm{eff}}$ 的下界 $1000$ 米（题目给出的唯一保证），即得：
+
+\begin{theorem}[围堵判空判据]
+\label{thm:p4empty}
+设 $N_c$ 为频道 $c$ 的无信号检测点集合。目标区域内的位置 $x$ 可被排除，当且仅当
+\begin{equation}
+  \label{eq:p4siege}
+  \forall u,\ \exists\,p\in N_c:\quad \lvert p-x\rvert\le 1000\ \text{且}\ (p-x)\cdot u\ge 0,
+  \qquad\text{等价地}\qquad
+  x\in\operatorname{conv}\bigl\{p\in N_c:\lvert p-x\rvert\le 1000\bigr\}.
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+$x$ \textbf{不}能被排除，当且仅当存在 $u$ 使全部“在接收距离内”的无信号点都落在开半平面
+$(p-x)\cdot u<0$ 内；这等价于向量组 $\{p-x\}$ 落在某个开半平面内，
+亦即 $0\notin\operatorname{conv}\{(p-x)/\lvert p-x\rvert\}$，即 $x\notin\operatorname{conv}\{p\}$。
+取逆否命题即得。全向源亦被覆盖：某方向被排除意味着有无信号点落在 $x$ 的 $1000$ 米之内，
+而全向源在接收距离内必然收得到，故全向假设同样被否定。
+\end{proof}
+
+式 \eqref{eq:p4siege} 的右端形式给出了这一判据的直观含义，见图 \ref{fig:p4siege}：
+\textbf{问题三中每个位置只需一个见证者，问题四中至少需要三个，而且要把它围起来}。
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[scale=0.95, font=\small]
+    % --- (a) 问题三：一个见证者就够 ---
+    \begin{scope}[xshift=0cm]
+      \fill[blue!12] (0,0) circle (1.5);
+      \draw[blue!60!black] (0,0) circle (1.5);
+      \fill[blue!60!black] (0,0) circle (2.2pt);
+      \node[below=2pt, blue!60!black] at (0,0) {$p$};
+      \node[star, star points=5, fill=red!80!black, inner sep=1.6pt] at (0.55,0.7) {};
+      \node[above right=0pt, red!70!black] at (0.55,0.7) {$x$};
+      \node[align=center] at (0,-2.15) {(a) 问题三\\ 一个无信号点即可排除 $x$};
+    \end{scope}
+    % --- (b) 问题四：两个不够 ---
+    \begin{scope}[xshift=5.0cm]
+      \node[star, star points=5, fill=red!80!black, inner sep=1.6pt] at (0,0) {};
+      \foreach \a in {30,150}{
+        \fill[green!45!black, opacity=0.16]
+          (0,0) -- ++(\a-90:1.75) arc (\a-90:\a+90:1.75) -- cycle;
+        \draw[->, green!45!black, thick] (0,0) -- (\a:1.1);
+        \fill[green!35!black] (\a:1.35) circle (2pt);
+      }
+      \draw[dashed, gray] (0,0) circle (1.75);
+      \node[align=center, red!70!black] at (0,-2.15)
+        {(b) 问题四：两个见证者\\ 下方仍有方向未被覆盖，$x$ \textbf{不能}排除};
+    \end{scope}
+    % --- (c) 问题四：三个围住 ---
+    \begin{scope}[xshift=10.0cm]
+      \node[star, star points=5, fill=red!80!black, inner sep=1.6pt] at (0,0) {};
+      \foreach \a in {90,210,330}{
+        \fill[green!45!black, opacity=0.16]
+          (0,0) -- ++(\a-90:1.75) arc (\a-90:\a+90:1.75) -- cycle;
+        \draw[->, green!45!black, thick] (0,0) -- (\a:1.1);
+        \fill[green!35!black] (\a:1.35) circle (2pt);
+      }
+      \draw[dashed, gray] (0,0) circle (1.75);
+      \node[align=center] at (0,-2.15)
+        {(c) 问题四：三个见证者围住\\ 全部方向被覆盖，$x$ 可以排除};
+    \end{scope}
+  \end{tikzpicture}
+  \caption{判空判据的变化。阴影为“若干扰源朝该方向则应当被该点收到”的方向集合，
+    绿点为无信号检测点，虚线圆为 $1000$ 米接收距离下界。
+    问题四中留白即代表尚未被见证的定向方向，只要留白非空，该位置就排除不掉。}
+  \label{fig:p4siege}
+\end{figure}
+
+\paragraph{锚点数的下界与构造。}
+记 $K_4$ 为满足式 \eqref{eq:p4siege} 所需的最少检测点数。
+由二维凸包至少需三个点，每个 $x$ 的 $1000$ 米邻域内至少有三个锚点，故
+
+\begin{equation}
+  \label{eq:p4lb}
+  \sum_{p}\bigl\lvert D(p,1000)\cap D(O,1800)\bigr\rvert\ \ge\ 3\bigl\lvert D(O,1800)\bigr\rvert
+  \quad\Longrightarrow\quad
+  K_4\ \ge\ \frac{3R^2}{r^2}=9.72,\qquad K_4\ge 10 .
+\end{equation}
+
+对照问题三的同类论证（每点只需一个见证者）仅给出 $K^{*}\ge 4$：
+\textbf{仅这一步，下界即由 $4$ 抬至 $10$}。该下界只用到“至少三个见证者”，
+未用到“围住”，因而仍然是松的。
+
+上界需要构造。本文以贪心可行集（$42$ 点）为起点，反复执行“删去一点 $+$ 局部精修”，
+在策略实际使用的判据栅格上保持残余为零，最终压缩至 $\mathbf{24}$ 个锚点，
+开放巡回 $19.0$ 公里。该构造经两套\textbf{互相独立}的实现验证：
+其一为策略所用的“方格 $\times$ 方向扇区”掩码（步长 $40$ 米、$36$ 个扇区、
+有效排除半径 $971.7$ 米），残余为 $0$；
+其二为按距离排序逐点加入并计算最大角隙的精确判据，在 $10$ 米细网格
+（$101765$ 个点）上最大围堵半径为 $975.12$ 米，余量 $24.88$ 米，未围堵格点为 $0$。
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.52\linewidth}
+    \centering
+    \begin{tikzpicture}
+      \begin{axis}[width=\linewidth, height=6.0cm, axis equal image,
+        xlabel={$x$ (米)}, ylabel={$y$ (米)},
+        xmin=-2300, xmax=2300, ymin=-2300, ymax=2300,
+        legend style={font=\scriptsize, at={(0.02,0.02)}, anchor=south west},
+        grid=major, tick label style={font=\scriptsize}]
+        \addplot[gray, dashed, thick, domain=0:360, samples=120]
+          ({1800*cos(x)}, {1800*sin(x)});
+        \addlegendentry{目标区域边界}
+        \addplot[gray!70, very thin] table[x=x, y=y, col sep=comma]
+          {\datadir/问题四_锚点布局.csv};
+        \addlegendentry{锚点巡回 $19.0$ km}
+        \addplot[only marks, mark=*, mark size=1.5pt, blue!70!black]
+          table[x=x, y=y, col sep=comma] {\datadir/问题四_锚点布局.csv};
+        \addlegendentry{围堵锚点（24 个）}
+      \end{axis}
+    \end{tikzpicture}
+  \end{minipage}\hfill
+  \begin{minipage}{0.45\linewidth}
+    \centering
+    \begin{tikzpicture}
+      \begin{axis}[width=\linewidth, height=5.6cm,
+        xlabel={已访问锚点数 $k$}, ylabel={已可判空的面积占比},
+        xmin=3, xmax=24, ymin=0, ymax=1.05, grid=major,
+        tick label style={font=\scriptsize}]
+        \addplot[thick, red!70!black, mark=*, mark size=1.1pt]
+          table[x=锚点数, y=已围堵面积占比, col sep=comma]
+          {\datadir/问题四_围堵进度.csv};
+        \addplot[gray, dashed] coordinates {(3,0.125) (24,1.0)};
+      \end{axis}
+    \end{tikzpicture}
+  \end{minipage}
+  \caption{左：$24$ 点围堵构造与巡回，其中 $13$ 个锚点位于目标区域之外。
+    右：前 $k$ 个锚点可判空的面积占比（虚线为线性参照）。
+    该曲线\textbf{不是线性累加}——围堵要求每个方向都有见证者，
+    缺一个方向即前功尽弃，故边界一圈要到最后几个锚点才合拢。}
+  \label{fig:p4anchor}
+\end{figure}
+
+\paragraph{为何必须走出目标区域。}
+$24$ 个锚点中有 $13$ 个位于半径 $1800$ 米的目标圆域之外（最远 $1998$ 米）。这是必须的：
+
+\begin{corollary}[边界外侧的盲区]
+\label{cor:p4outside}
+设干扰源位于目标区域边界 $\lvert G\rvert=1800$ 且定向方向朝外，
+则目标区域内任何一点都在其覆盖角范围之外。
+\end{corollary}
+
+\begin{proof}
+覆盖范围是过 $G$、法向朝外的闭半平面，而目标圆域整体位于该半平面的另一侧
+（圆在边界点处的切线内侧）。
+\end{proof}
+
+故欲判空必须走出目标区域。题目附件 2 第 1.1 节明确允许机器狗提交区域外的位置，
+本文据此把锚点外扩至半径约 $2000$ 米。
+
+\paragraph{判空代价。}
+每个空频道须在全部锚点上各检测一次，锚点本身还需走一趟，代价见图 \ref{fig:p4cost}。
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[width=0.68\linewidth, height=5.0cm,
+      xlabel={空频道个数}, ylabel={判空总代价 (秒)},
+      xmin=2.7, xmax=10.3, ymin=0, ymax=5200, grid=major,
+      legend style={font=\small, at={(0.02,0.98)}, anchor=north west}]
+      \addplot[thick, blue!70!black, mark=square*, mark size=1.6pt]
+        table[x=空频道数, y=合计秒, col sep=comma]
+        {\datadir/问题四_判空代价_圆盘.csv};
+      \addlegendentry{问题三：圆盘覆盖（$7$ 个锚点，$6.2$ km）}
+      \addplot[thick, red!70!black, mark=*, mark size=1.6pt]
+        table[x=空频道数, y=合计秒, col sep=comma]
+        {\datadir/问题四_判空代价_围堵.csv};
+      \addlegendentry{问题四：半圆盘围堵（$24$ 个锚点，$19.0$ km）}
+    \end{axis}
+  \end{tikzpicture}
+  \caption{判空代价对照（检测按每频道每锚点 $6$ 秒计，行进按 $5$ 米/秒计）。
+    典型情形（$7$ 个空频道）由 $1527$ 秒增至 $4818$ 秒，\textbf{为三倍有余}。
+    行进一项在实战中会被清除巡回大量分摊，而检测的 $5$ 秒分摊不掉。}
+  \label{fig:p4cost}
+\end{figure}
+
+\subsubsection{策略的三处改动与算法}
+
+问题三的三层结构（信念层、动作层、路线层）与算法 \ref{alg:p3main} 的主循环框架原样沿用，
+核心思想仍是\textbf{把信息获取与清除执行合并为同一条巡回}——
+在问题四中这一点更为重要，因为锚点由 $7$ 个增至 $24$ 个。改动集中于三处，见表 \ref{tab:p4change}。
+
+\begin{table}[H]
+  \centering
+  \caption{相对问题三策略的三处改动}
+  \label{tab:p4change}
+  \begin{tabularx}{\textwidth}{lXX}
+    \toprule
+    模块 & 问题三 & 问题四 \\
+    \midrule
+    判空掩码 & 每方格两种状态（已排除 / 未排除）；一次无信号排除 $1000$ 米圆盘内全部方格
+      & 每方格再按方位角分 $36$ 个\textbf{扇区}；一次无信号只排除被见证的
+        $(\text{方格},\text{扇区})$ 二元组；方格全部扇区被排除才算排除 \\
+    位置可行集 & 楔形 $+$ 距离约束 $+$ 无信号排除盘 $+$ 序约束
+      & 仅楔形 $+$ 距离约束 $+$ 清除失败盘；\textbf{无信号不再压缩位置}，
+        序约束与排除盘仅在证明该频道为全向源后启用 \\
+    补测点选择 & 仅需判断“够不够得着”（距离）
+      & 还需判断“是否绕到背面”（方向）；候选点改为以检测点为锚的侧移对
+        式 \eqref{eq:p4pair}，并附一条硬规则 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\paragraph{方向可行集与收信把握。}
+设候选源位置为 $x$，定向方向 $u$ 的集员估计为
+
+\begin{equation}
+  \label{eq:p4uset}
+  U_c(x)=\Bigl\{u:\ \underbrace{(s-x)\cdot u\ge 0,\ \forall s\in S_c}_{\text{收到信号的点}};\quad
+  \underbrace{(q-x)\cdot u<0,\ \forall q\in N_c\ \text{且}\ \lvert q-x\rvert\le B_c(x)}_{\text{保证在接收距离内却未收到的点}}\Bigr\},
+\end{equation}
+
+其中 $B_c(x)=\max\bigl(1000,\ \max_{s\in S_c}\lvert s-x\rvert\bigr)$ 是 $R_{\mathrm{eff},c}$ 的已知下界。
+第二组约束中的条件 $\lvert q-x\rvert\le B_c(x)$ \textbf{不可省}：
+若 $q$ 不在保证接收距离内，未收到可能是距离原因，推不出方向约束，省略将剔除真实的 $u$。
+实现上把 $u$ 离散为 $72$ 格，$U_c(x)$ 即一个布尔数组。
+
+据此把问题三式 \eqref{eq:p3recv} 的“收信把握”推广为距离与方向两层之积，对可行集撒点取平均：
+
+\begin{equation}
+  \label{eq:p4recv}
+  p_{\text{收}}(q)=\operatorname*{avg}_{x}\ \mathbf 1\bigl[\lvert q-x\rvert\le B_c(x)\bigr]
+  \Bigl(\pi_x+(1-\pi_x)\frac{\lvert U_c(x)\cap\{u:(q-x)\cdot u\ge 0\}\rvert}{\lvert U_c(x)\rvert}\Bigr),
+\end{equation}
+
+$\pi_x$ 为“该位置上干扰源仍可能是全向的”概率。此处有一条容易忽略的推论：
+\textbf{若存在无信号点落在保证接收距离之内，则全向假设已被否定}——
+全向源在接收距离内必然收得到。故
+
+\begin{equation}
+  \label{eq:p4prior}
+  \pi_x=\begin{cases}
+    0, & \exists\,q\in N_c,\ \lvert q-x\rvert\le B_c(x),\\[2pt]
+    1/2, & \text{否则（题目未给定向源比例，取最大熵）}.
+  \end{cases}
+\end{equation}
+
+式 \eqref{eq:p4prior} 中第一行不可省：若不论观测如何都按 $1/2$ 计，
+策略会系统性高估把握，在同一片背面反复空测。
+
+\paragraph{一条硬规则。}
+由引理 \ref{lem:p4mirror}，本文规定：\textbf{若上一次对该频道的检测返回无信号（位置 $q$），
+则下一次补测点只在保证集 $\{p+\lambda(p-q):\lambda>0,\ p\in S_c\}$ 中挑选}，
+并按问题三式 \eqref{eq:p3refpt} 的评分选取 $\lambda$。
+
+两点需说明。其一，之所以写成硬规则而非交给评分，是因为\textbf{完备性不应依赖参数取值}：
+本文实测表明，仅靠评分中的软性惩罚时，惩罚系数取某些值会出现连续空测的退化局面。
+其二，引理给出的是\textbf{一整条射线}而非一个点，$\lambda$ 越大方位变化越大但行程越远，
+故须把射线上的若干取值一并交由评分比较——本文实测表明，
+若直接固定 $\lambda=1$ 返回，单局路程会由 $31$ 公里增至 $233$ 公里。
+
+\paragraph{预置围堵构造。}
+一局开始时各频道的判空掩码均为“全未排除”，\textbf{残余是固定的}，
+故最优锚点集与算例无关，现场重算等于每局重跑同一道离线优化。
+本文因此将离线优化所得的 $24$ 点构造预置于策略中，在线只决定“哪些仍需前往、按何顺序”。
+这不是利用真值，而是一个与算例无关的几何常数，与问题三的 $K^{*}=7$ 属同一类。
+
+\subsubsection{数值结果}
+\label{sssec:p4result}
+
+本节结果取自 $10$ 局随机算例（源数 $10\sim16$ 等概率、位置圆域内均匀、
+$R_{\mathrm{eff}}\sim U[1000,1500]$、定向源比例 $1/2$ 且两类各至少一个、
+定向方向在 $[0^\circ,360^\circ)$ 上均匀、误差均匀独立，随机种子 $20260912$）。
+其中\textbf{定向源的比例与朝向分布是本文的建模约定}：
+题目只说明“既有全向又有定向”，未给出比例与方向的分布，故取最大熵选择。
+该约定只影响时间统计，\textbf{不影响“确保清除”}——由推论 \ref{cor:p4invariance}，
+清除率与一切分布假设无关。
+\textbf{样本量的取法与问题三不同}：问题四中“清除率恒为 $1$”已由定理 \ref{thm:p4empty}
+与定理 \ref{thm:p3contain} 证明（详见 \ref{sssec:p4check} 节），抽样只承担“时间上快多少”，
+故局数取到能分辨数百秒量级的差异即止。
+
+\paragraph{参照线与策略对照。}
+沿用问题三的两条参照线，其中严格下界的判空项改用与构造无关的下界 $K_4\ge 10$
+（式 \eqref{eq:p4lb}），以保证整条式子确为下界，得 $1896.6$ 秒；
+全知参照为 $5742.2$ 秒。二者之比 $0.330$ 远低于问题三的 $0.707$，
+其差距几乎全部来自\textbf{下界太松}（真实需要 $24$ 个锚点而下界仅计 $10$ 个），
+并非可省的时间。对照结果见表 \ref{tab:p4compare}。
+
+\begin{table}[H]
+  \centering
+  \caption{问题四策略对照（$10$ 局平均，时间单位：秒）}
+  \label{tab:p4compare}
+  \begin{tabularx}{\textwidth}{Xccccccc}
+    \toprule
+    策略 & 清除率 & 全清局数 & 总时间 & 平均定位清除时间 & /严格下界 & /全知参照 & 路程(米) \\
+    \midrule
+    全知参照（已知真值） & 1.0000 & 10 & 5742.2 & 416.1 & 3.03 & 1.000 & 24772 \\
+    \textbf{本文策略} & \textbf{1.0000} & \textbf{10} & \textbf{8466.6} & \textbf{613.5}
+      & \textbf{4.46} & \textbf{1.474} & \textbf{31210} \\
+    套用问题三判空 & $1.0000^{*}$ & $10^{*}$ & 5909.4 & 428.2 & 3.12 & 1.029 & 22255 \\
+    基线一：先扫后清 & 1.0000 & 10 & 10521.6 & 762.4 & 5.55 & 1.832 & 33190 \\
+    基线二：逐源处理 & 0.9714 & 7 & 10964.7 & 818.3 & 5.78 & 1.909 & 45527 \\
+    基线三：盲清搜索 & 1.0000 & --- & 97246.8 & 7046.9 & 51.27 & 16.935 & 339309 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+四点结论。其一，本文策略较两个结构不同的基线分别快 $19.5\%$ 与 $22.8\%$，
+且是唯一在全部 $10$ 局做到“全清且零未决频道”的可行策略
+（基线二有 $3$ 局放弃，累计漏清 $4$ 个源）。
+其二，为全知参照的 $1.474$ 倍，该倍数已包含“既不知源在何处、也不知其朝向”
+所必需的全部探索代价。
+其三，路程仅比全知参照多 $26\%$，而检测做了 $362.1$ 次，
+说明\textbf{问题四的优化重心在检测侧}。
+其四，盲清搜索需 $27.0$ 小时，与问题三完全相同——它是唯一不受定向影响的方案，
+两个量级的差距正说明示向度信息的价值。
+
+\paragraph{第三行必须加星号。}
+“套用问题三判空”指仅把判空规则换回式 \eqref{eq:p3empty}，其余一字不改。
+它在这 $10$ 局中碰巧未漏源，但\textbf{它是错的}。
+漏判是偶发事件（须源恰好落在被误排除的位置），小样本可能一次都碰不上，
+因此不能以抽样为论据。下述定理给出\textbf{不依赖抽样}的反例。
+
+\begin{theorem}[圆盘判据在问题四中必然失效]
+\label{thm:p4counter}
+存在满足问题三判空判据式 \eqref{eq:p3empty} 的检测点集与一个定向干扰源，
+使该干扰源对全部检测点均返回无信号。
+\end{theorem}
+
+\begin{proof}
+取问题三的标准判空构造：一个圆心加六个半径 $\tfrac{\sqrt3}{2}R=1558.8$ 米的环点，共七点。
+$2$ 米方格逐点验证表明其半径 $1000$ 米的圆盘覆盖整个目标圆域（未覆盖格数 $0/2544569$），
+故满足式 \eqref{eq:p3empty}；且七点横坐标的最大值为 $1558.8$ 米。
+现取定向干扰源位于 $G=(1700,0)$、定向方向为 $0^\circ$，由式 \eqref{eq:p4half}
+其覆盖范围为 $\{x\ge 1700\}$。七点均满足 $x\le 1558.8<1700$，
+故落在覆盖范围内的检测点数为 $0/7$，七次检测全部返回无信号。
+按式 \eqref{eq:p3empty} 该频道被判为空，而该处确有干扰源。
+\end{proof}
+
+反观定理 \ref{thm:p4empty}：欲围住点 $(1700,0)$，须有无信号点落在其\textbf{每一个}半圆盘内，
+朝东一侧亦然，因而必有检测点位于 $x>1700$，也就必然进入该源的覆盖范围而被探测到。
+\textbf{围堵判据的完备性与圆盘判据漏判的必然性，是同一件事的两面。}
+
+\paragraph{时间去向、消融与单局全景。}
+四分项为移动 $6242.1$ 秒（$73.7\%$）、检测 $1810.5$ 秒（$21.4\%$）、
+切频 $339.0$ 秒（$4.0\%$）、清除 $75.0$ 秒（$0.9\%$）。
+\textbf{占比与问题三几乎相同，但绝对值增至一倍半}（$3296\to 8467$ 秒），
+增量几乎全在“为判空而走的路与为判空而做的检测”上：
+$24$ 个锚点的巡回 $19.0$ 公里即占总路程 $31.2$ 公里的六成。
+消融实验见表 \ref{tab:p4ablation}。
+
+\begin{table}[H]
+  \centering
+  \caption{问题四消融实验（$10$ 局，逐局配对，正值表示该设计有效）}
+  \label{tab:p4ablation}
+  \begin{tabularx}{\textwidth}{Xccccc}
+    \toprule
+    关闭的设计 & 总时间(秒) & 配对差(秒) & 标准误 & $t$ & 清除率 \\
+    \midrule
+    \textbf{完整策略} & \textbf{8466.6} & --- & --- & --- & \textbf{1.0000} \\
+    预置围堵构造（改为在线贪心） & 9207.5 & $+741.0$ & 340.4 & $+2.18$ & 1.0000 \\
+    镜像必达候选（引理 \ref{lem:p4mirror}） & 8711.3 & $+244.7$ & 334.5 & $+0.73$ & 1.0000 \\
+    收信把握判断（式 \eqref{eq:p4recv}） & 8504.9 & $+38.3$ & 336.7 & $+0.11$ & 1.0000 \\
+    全向先验的后验更新（式 \eqref{eq:p4prior}） & 8336.2 & $-130.3$ & 71.9 & $-1.81$ & 1.0000 \\
+    巡回的 2-opt 改良 & 8336.3 & $-130.3$ & 284.1 & $-0.46$ & 1.0000 \\
+    盲清（区域须 $\le 20$ 米才开枪） & 8232.0 & $-234.5$ & 185.7 & $-1.26$ & 1.0000 \\
+    锚点准则（改回“覆盖每米”） & 8052.3 & $-414.3$ & 209.0 & $-1.98$ & 1.0000 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+三点需照实说明。其一，\textbf{只有“预置围堵构造”一项统计显著}（$t=2.18$）：
+在线贪心需 $37\sim42$ 个锚点、巡回 $25$ 公里，省下的时间几乎全部来自行进。
+其二，其余七项的 $\lvert t\rvert$ 均小于 $2$，按本文判定规则属无差别，
+其中四项的配对差还是负的，\textbf{不能作为策略优点宣传}。
+其三，\textbf{全部配置的清除率均为 $1.0000$}——这正是定理 \ref{thm:p4empty} 的推论：
+完备性由退出条件保证，与这些设计无关，它们只影响到达退出条件所需的时间。
+
+“镜像必达”一项尤需正确定位：其价值\textbf{不在平均时间，而在最坏情形}。
+关闭该规则后，本文实测出现过“对同一频道连续检测 $2424$ 次仍未定位、耗尽动作预算”的退化局面。
+它是完备性的保险，而非性能的来源。
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.53\linewidth}
+    \centering
+    \begin{tikzpicture}
+      \begin{axis}[width=\linewidth, height=6.4cm, axis equal image,
+        xlabel={$x$ (米)}, ylabel={$y$ (米)},
+        xmin=-2200, xmax=2200, ymin=-2200, ymax=2200,
+        legend style={font=\scriptsize, at={(1.02,1.0)}, anchor=north west},
+        grid=major, tick label style={font=\scriptsize}]
+        \addplot[gray, dashed, domain=0:360, samples=120]
+          ({1800*cos(x)}, {1800*sin(x)});
+        \addlegendentry{目标区域}
+        \addplot[gray!60, very thin] table[x=x, y=y, col sep=comma]
+          {\datadir/问题四_算例A_轨迹.csv};
+        \addlegendentry{机器狗轨迹}
+        \addplot[only marks, mark=square*, mark size=1.3pt, blue!70!black]
+          table[x=x, y=y, col sep=comma] {\datadir/问题四_算例A_锚点停靠.csv};
+        \addlegendentry{围堵锚点停靠}
+        \addplot[only marks, mark=x, mark size=2.4pt, red!80!black, thick]
+          table[x=x, y=y, col sep=comma] {\datadir/问题四_算例A_清除点.csv};
+        \addlegendentry{清除点}
+        \addplot[only marks, mark=star, mark size=2.6pt, black]
+          table[x=x, y=y, col sep=comma] {\datadir/问题四_算例A_源全向.csv};
+        \addlegendentry{全向干扰源}
+        \addplot[only marks, mark=triangle*, mark size=2.4pt, brown!80!black]
+          table[x=x, y=y, col sep=comma] {\datadir/问题四_算例A_源定向.csv};
+        \addlegendentry{定向干扰源}
+        \addplot[brown!80!black, -{Stealth[length=3pt]}, quiver={u=\thisrow{dx},
+          v=\thisrow{dy}}] table[x=x, y=y, col sep=comma]
+          {\datadir/问题四_算例A_源定向.csv};
+        \addlegendentry{定向方向}
+      \end{axis}
+    \end{tikzpicture}
+  \end{minipage}\hfill
+  \begin{minipage}{0.42\linewidth}
+    \centering
+    \begin{tikzpicture}
+      \begin{axis}[width=\linewidth, height=5.6cm,
+        xlabel={虚拟时刻 (秒)}, ylabel={累计已清除个数},
+        xmin=0, xmax=11500, ymin=0, ymax=14, grid=major,
+        legend style={font=\scriptsize, at={(0.98,0.02)}, anchor=south east},
+        tick label style={font=\scriptsize}]
+        \addplot[thick, red!75!black, const plot]
+          table[x=虚拟时刻, y=已清除数, col sep=comma] {\datadir/问题四_进度_推荐.csv};
+        \addlegendentry{本文策略}
+        \addplot[thick, blue!65!black, const plot, dashed]
+          table[x=虚拟时刻, y=已清除数, col sep=comma] {\datadir/问题四_进度_先扫后清.csv};
+        \addlegendentry{先扫后清}
+        \addplot[thick, green!45!black, const plot, dotted]
+          table[x=虚拟时刻, y=已清除数, col sep=comma] {\datadir/问题四_进度_逐源.csv};
+        \addlegendentry{逐源处理}
+      \end{axis}
+    \end{tikzpicture}
+  \end{minipage}
+  \caption{左：算例 A（$13$ 个源，其中 $6$ 个定向）的单局全景，
+    箭头为定向源的定向方向；信息获取与清除执行走的是同一条巡回。
+    右：清除进度曲线。基线“先扫后清”在前 $4000$ 秒内毫无产出，
+    正是信息与执行分离的代价。}
+  \label{fig:p4panel}
+\end{figure}
+
+\paragraph{分组统计。}
+按源数分档，总时间几乎与源数无关（$8201\sim 8926$ 秒），
+故平均定位清除时间随源数单调下降（$811\to 526$ 秒/源）——
+\textbf{该指标依赖于案例的源数，横向比较时须一并说明}。
+按定向源比例分档，时间由 $8345$ 秒（$\le 30\%$）升至 $9266$ 秒（$>70\%$），
+相差仅 $11\%$；四个具名算例中，$12$ 个定向源的算例 D 与 $6$ 个定向源的算例 A
+仅差 $14\%$。这一现象可由代价分解解释：总时间中约六成为判空项，
+而判空的锚点集与巡回是由目标区域与 $R_{\mathrm{eff}}$ 下界决定的\textbf{几何常数}，
+与定向源比例无关。故有：
+
+\begin{equation}
+  \label{eq:p4q}
+  \boxed{\ \text{代价来自“不知道是否存在定向源”，而非“存在多少定向源”。}\ }
+\end{equation}
+
+即便全部为全向源（即问题三的情形），只要不能事先排除定向源存在的可能，
+围堵判空的开销仍须照付。这解释了问题四相对问题三的一倍半增量。
+
+\subsubsection{正式测试结果}
+
+按题目要求，在充分演练测试后进行三次正式测试，结果见表 \ref{tab:p4official}。
+
+\begin{table}[H]
+  \centering
+  \caption{问题四正式测试结果}
+  \label{tab:p4official}
+  \begin{tabular}{lcccc}
+    \toprule
+    测试 & 测试案例编码 & 清除干扰源个数 & 平均定位清除时间(秒) & 程序运行时间(秒) \\
+    \midrule
+    测试 1 & （见支撑材料日志） & 11 & 711.91 & 4.64 \\
+    测试 2 & （见支撑材料日志） & 11 & 794.36 & 5.90 \\
+    测试 3 & （见支撑材料日志） & 12 & 599.88 & 4.65 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+三局的虚拟总时间分别为 $7831.0$、$8738.0$、$7198.5$ 秒，指令条数 $391$、$445$、$344$，
+程序运行时间均在 $6$ 秒以内（限时 $20$ 分钟）。
+将三份日志重放入信念模型复盘，得到三项可核对的结果，见表 \ref{tab:p4replay}。
+
+\begin{table}[H]
+  \centering
+  \caption{正式测试日志复盘}
+  \label{tab:p4replay}
+  \begin{tabular}{lccc}
+    \toprule
+    复核项 & 测试 1 & 测试 2 & 测试 3 \\
+    \midrule
+    已清除频道数 $+$ 判空频道数（应为 $20$） & $11+9=20$ & $11+9=20$ & $12+8=20$ \\
+    退出时未决频道数（应为 $0$） & 0 & 0 & 0 \\
+    清除指令次数 $-$ 清除成功次数（空枪，应为 $0$） & 0 & 0 & 0 \\
+    重算虚拟时钟与模拟器之差的最大值(秒) & $1.1\times10^{-6}$ & $3.9\times10^{-6}$ & $3.5\times10^{-6}$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+三行各有其意义。第一行表明机器狗并非“时间耗尽”或“无事可做”而停止，
+而是\textbf{每个频道都取得了结论}：或已清除，或按定理 \ref{thm:p4empty} 证明其不存在干扰源。
+第二行的空枪次数为零，说明每次开枪前定位区域均已压入 $20$ 米清除半径。
+第三行按附件 1 表 1 与附件 2 第 4 节从零重算虚拟时钟，与模拟器返回值之差在 $10^{-6}$ 秒量级
+（浮点累加误差），\textbf{这是离线统计与正式测试同口径的依据}——
+此处模拟器是裁判，本文的代价模型是被检验对象。
+
+与离线预测亦相符：离线在源数 $11\sim12$ 档给出 $8859\sim 8926$ 秒，
+三次实测值均落在离线分布之内；时间去向（移动 $70.8\%$、检测 $24.0\%$）
+与离线（$73.7\%$、$21.4\%$）一致。
+
+口径说明同问题三：比例的分母为干扰源总数，仅演练测试会告知，故表 \ref{tab:p4official}
+只列清除个数；平均定位清除时间随源数下降，三次测试间的差异有相当一部分来自源数不同
+（$11$、$11$、$12$）而非策略表现。
+
+\subsubsection{模型检验}
+\label{sssec:p4check}
+
+\paragraph{检验什么。}
+“确保清除”在问题四中归结为两条：可行集恒含真源（定理 \ref{thm:p3contain} 的问题四版本，
+其被交集合的清单已按表 \ref{tab:p4change} 更换），以及判空的正确性（定理 \ref{thm:p4empty}）。
+二者的证明均\textbf{只依赖题目给定的三条物理界}——误差不超过 $1^\circ$、
+$R_{\mathrm{eff}}\ge 1000$ 米、定向覆盖角为 $180^\circ$——
+而与干扰源的个数、位置、定向比例、方向分布、$R_{\mathrm{eff}}$ 分布、误差分布\textbf{均无关}。
+由此直接得到：
+
+\begin{corollary}[清除率的不变性]
+\label{cor:p4invariance}
+在上述三条物理界成立的前提下，本文策略退出时必已清除目标区域内全部干扰源，
+该结论与一切分布假设无关。
+\end{corollary}
+
+推论 \ref{cor:p4invariance} 解释了表 \ref{tab:p4ablation} 中“全部配置清除率均为 $1.0000$”
+并非样本不足所致，也说明\textbf{无须对清除率作灵敏度扫描}——
+对一个已被证明为常数的量作扫描不产生新信息。故本文的灵敏度分析集中于时间，
+并以代价分解（式 \eqref{eq:p4q} 前的论述）给出机理而非仅给出数值。
+
+\paragraph{引理层检验。}
+沿用问题三的方法：把全局命题拆为互相独立的局部引理，脱离策略对参数空间密集扫描。
+问题四共 $11$ 条，覆盖定向几何（覆盖角等价于半平面、收信锥、三点包围蕴含全向、
+镜像必达、Farkas 排除）、判空判据的\textbf{充分性与必要性两个方向}，
+以及离散化的保守性（扇区标记的距离与角度两侧裕度、栅格覆盖圆域、
+规划器返回的锚点集必能清空判据掩码、清除与覆盖角无关）。
+\textbf{全部通过，反例为 $0$}，总耗时约 $15$ 秒。
+其中楔形半角的实测最大偏差为 $1.003945^\circ$，小于所取的 $\delta=1.005^\circ$；
+判据栅格的最大切比雪夫距离为 $19.62$ 米，不超过半步长 $20$ 米。
+
+判别性对照见表 \ref{tab:p4lemma}，其中第三行是本文的一处\textbf{方法论选择}。
+
+\begin{table}[H]
+  \centering
+  \caption{关键引理的判别性对照}
+  \label{tab:p4lemma}
+  \begin{tabularx}{\textwidth}{Xlcc}
+    \toprule
+    对照设置 & 期望 & 反例数 & 结论 \\
+    \midrule
+    扇区标记的角度裕度置零（直接取 $90^\circ$） & 应当报警 & $5/15000$ & 报警 \\
+    楔形半角取 $1.000^\circ$（不留舍入裕度） & 应当报警 & $163563/360000$ & 报警 \\
+    “规划栅格覆盖 $\Rightarrow$ 判据栅格覆盖”这一蕴含 & 本不成立 & $757/4000$ & 确不成立 \\
+    （阴性）栅格裕度加倍：只会令排除更少 & 不应报警 & $0/15000$ & 未报警 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+第三行的含义是：选取锚点使用的是 $120$ 米粗采样点阵（为提高速度），
+而判空的\textbf{判据}使用 $40$ 米完整栅格。问题三曾因二者尺度不一致
+而使规划器返回空任务表、主循环在无依据的情况下退出。
+本文没有沿用问题三“收紧规划器半径”的修法（那会使有效排除半径由 $971.7$ 米降至 $915$ 米，
+锚点数增加一成半），而是\textbf{把正确性从规划器移至判据}：
+贪心的最后一步必在判据栅格上核验残余，不空则继续补点。
+因此需要检验的不是那条蕴含（它确实不成立），而是“返回的锚点集必能清空判据掩码”，
+后者在同样的随机掩码上一次都未失效。第四行为\textbf{阴性对照}：
+多留裕度只会使可行集更大、排除更少，属保守而非错误，故不应报警——它确实没有报警。
+
+\paragraph{集成检验与变异测试。}
+引理覆盖不到的是“各条约束是否被正确串接”（顺序、缓存、异常分支），只能端到端运行；
+因主证明不依赖于此，局数压至 $8$ 局。按题面重写一个独立的可行性判据
+（写成“存在 $R_{\mathrm{eff}}\in[1000,1500]$ 与定向方向 $u$ 使全部观测自洽”的存在性条件，
+一次性涵盖距离、覆盖角与示向度三项），每次检测后断言真源仍在可行集内：
+\textbf{$1012$ 次断言，违规 $0$；判为空而实际有源的频道 $0$ 个；
+“已清除 $+$ 判空 $=20$”在 $8/8$ 局成立}。
+
+变异测试植入 $6$ 处改动，其中 $4$ 处报警、$2$ 处未报警。
+\textbf{未报警的两处应当照实说明}：它们改动的是量级很小的保守裕度
+（有效排除半径变动 $2.8\%$、角度裕度变动 $1^\circ\sim 3^\circ$），
+欲在整局仿真中暴露，真源须恰好落在被多排除的那一圈内，属千分之一量级的事件。
+\textbf{同一缺陷在引理层的判别性对照中一击即中}（表 \ref{tab:p4lemma} 第一行）。
+这正是本文将检验主体置于引理证明而非端到端抽样的原因；
+问题三亦曾出现同一现象，说明这并非偶然。
+
+\paragraph{结论的适用范围。}
+综上，本文的保证应完整表述为：
+
+\begin{quote}
+\textbf{在“示向度误差不超过 $1^\circ$、有效接收半径不低于 $1000$ 米、
+定向源覆盖角度范围为 $180^\circ$”这三条题目给定条件下，本文策略保证清除全部干扰源。}
+\end{quote}
+
+三条均为题设，无法检验，只能界定其失效后果：$R_{\mathrm{eff}}$ 的下界一旦跌破 $1000$ 米，
+式 \eqref{eq:p4siege} 的距离层前提不成立，判空失去依据；
+误差超过 $1^\circ$ 则楔形不再含真值；
+覆盖角若不等于 $180^\circ$，则式 \eqref{eq:p4half} 的半平面结构不成立，
+引理 \ref{lem:p4cone} 或 \ref{lem:p4mirror} 随之失效。
+将该保证写成无条件命题，在数学上不成立。
+
 
 \section{模型的评价与推广}
 
