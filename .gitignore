@@ -45,3 +45,6 @@ figures/cache/
 
 # 论文编译产物, 每人编译结果不同, 避免二进制冲突
 paper/*.pdf
+
+# 参赛队号属个人环境专属信息, 只提交 参赛队号.txt.example
+参赛队号.txt

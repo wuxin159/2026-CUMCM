@@ -35,6 +35,13 @@
 \pgfplotsset{compat=1.18}
 \usetikzlibrary{arrows.meta, positioning, shapes.geometric, calc}
 
+% viridis 的反转版：本文的等值面图画的都是「越小越好」的目标函数,
+% 用反转色标使「亮 = 优」, 与直觉一致。
+\pgfplotsset{
+  colormap={viridisrev}{indices of colormap={
+    \pgfplotscolormaplastindexof{viridis},...,0 of viridis}},
+}
+
 \graphicspath{{../figures/}{figures/}}
 
 % 数据目录, 便于统一改路径
@@ -117,7 +124,10 @@
 重复检测不会改变检测误差}。这意味着在同一检测点反复测量不产生任何新信息，
 基于独立重复观测的平均化降噪、最小二乘拟合与卡尔曼滤波等方法在此均不适用。
 
-因此，本文采用集员估计的思路：一次检测所提供的信息不是一条射线，而是一个以检测点为顶点、
+因此，本文采用\textbf{集员估计}（set-membership estimation）的思路\cite{schweppe}：
+该方法专为“误差未知但有界”的情形设计，其输出是一个必定包含真值的集合而非点估计，
+恰与题目给出的误差信息形式相匹配。具体地，
+一次检测所提供的信息不是一条射线，而是一个以检测点为顶点、
 半角为 $1^\circ$ 的\textbf{楔形区域}，干扰源必落于其中；多次检测的信息通过\textbf{取交集}
 而非加权平均来融合。由于楔形的张角远小于平角，每个楔形可精确表示为两个半平面之交，
 于是定位区域归结为若干半平面的交，必为凸多边形，其直径可在顶点对上取到。
@@ -126,9 +136,30 @@
 本文将说明：该问题与最小覆盖圆半径是否达到其下界等价，答案一般为否，
 且保证覆盖所需的半径由 Jung 定理给出。
 
-\subsection{问题二至四的分析}
+\subsection{问题二的分析}
 
-% TODO: 待问题二、三、四完成后补写。
+问题二在问题一的几何框架上增加了一个本质变化：\textbf{检测点由外生给定变为由我们选择}。
+问题一的检测点如同已布设的固定监测站，只需评价其定位结果；而问题二要回答“应当选在哪里”，
+于是“选”的代价必须进入模型。
+
+分析由三个层次递进。第一，一次检测之后干扰源的可行集是一条纵长 $1495$ 米、
+横宽不足 $53$ 米的细长扇形带，方位已定到 $\pm1^\circ$ 而距离几乎一无所知，
+因此第二个检测点的作用是\textbf{确定距离}而非改善方位。第二，交会几何存在闭式解，
+可证明定位区域直径在“正横站位”处取极小，且\textbf{不存在对全部可能源距一致最优的第二检测点}
+（定理 \ref{thm:p2none}）——这说明“使定位区域最小的第二点”这一提法不适定，必须稳健化；
+而不同的稳健化准则会给出相距数百米的不同最优点。第三，题目明确只派出\textbf{一只}机器狗，
+第二个检测点只能靠其自行走到，行进消耗的正是题目要求最小化的时间，
+故“较好的定位效果”不能脱离行程孤立定义。
+
+据此，本文以\textbf{期望总清除时间}为准则，并利用“机器狗速度 $5$ 米/秒、一次检测 $5$ 秒”
+这一题设，把时间与路程统一到\textbf{等效行程}量纲上（一次检测等价于 $25$ 米路程），
+从而使各项代价可直接相加比较。答案呈现为一个区域而非一个点，
+其数学根源是最优侧移量对代价比的\textbf{立方根}依赖；这一自由度也为问题三中
+“一次停靠服务多个干扰源”留出了调度空间。
+
+\subsection{问题三、四的分析}
+
+% TODO: 待问题三、四完成后补写。
 
 %======================================================================
 \section{模型假设}
@@ -151,6 +182,13 @@
         需要强调的是，\textbf{本文问题一的全部结论只依赖确界 $|\varepsilon|\le 1^\circ$，
         与分布形态无关}，该假设仅用于构造算例，其影响将在第 \ref{sec:p1check} 节说明。
   \item 忽略测向机与干扰源的高度差异，视为同一平面上的二维问题（题目附录 2 给定）。
+  \item 各干扰源的有效接收半径 $R_{\mathrm{eff}}\in[1000,1500]$ 米，且互不相同、
+        无法通过接口查询（题目附录 2 与附件 2 第 2.1 节给定）。因此“必定能收到信号”
+        只能按下界 $1000$ 米计算。
+  \item 在问题二计算期望值时，假设干扰源在目标区域内均匀分布、$R_{\mathrm{eff}}$ 在
+        $[1000,1500]$ 上均匀分布，由此导出源距的先验密度
+        $p(\rho)\propto\rho\cdot\Pr(R_{\mathrm{eff}}\ge\rho)$。题目未给出干扰源位置的分布，
+        该假设仅用于取期望；其影响将在第 \ref{sec:p2check} 节以敏感性分析说明。
 \end{enumerate}
 
 %======================================================================
@@ -170,7 +208,6 @@
     $\delta$        & 示向度误差半角，本文取 $\delta=1^\circ$ & 度 \\
     $R$             & 目标区域半径，$R=1800$ & 米 \\
     $G$             & 干扰源的真实位置 & --- \\
-    $u_i^{\mathrm{lo}},u_i^{\mathrm{hi}}$ & 方向 $\theta_i-\delta$、$\theta_i+\delta$ 的单位向量 & --- \\
     $W_i$           & 检测点 $i$ 确定的楔形区域 & --- \\
     $L=\bigcap_i W_i$ & 定位区域 & --- \\
     $d$             & 定位区域的直径，$d=\max_{P,Q\in L}|PQ|$ & 米 \\
@@ -178,9 +215,16 @@
     $R_{\min}$      & 定位区域的最小覆盖圆半径 & 米 \\
     $\varphi$       & 两个检测点对干扰源的交会角 & 度 \\
     $m$             & 定位区域的顶点个数 & --- \\
-    $\ell$          & 检测点到干扰源的距离上限（定理 \ref{thm:clearable}） & 米 \\
-    $\ell^{*}$      & 保证可一次清除的距离阈值，$\ell^{*}\approx770$ & 米 \\
+    $\ell,\ \ell^{*}$ & 检测点到干扰源的距离上限及其可一次清除的阈值（定理 \ref{thm:clearable}） & 米 \\
     $E$             & 顶点超出“以直径为直径的圆”的最大距离 & 米 \\
+    \midrule
+    \multicolumn{3}{l}{\emph{以下符号用于问题二（第 \ref{sec:p2} 节）}} \\
+    $\rho,\ \rho_{\mathrm{hi}}$ & 干扰源到第一检测点的距离 $|S_1G|$ 及其上界 & 米 \\
+    $R_{\mathrm{eff}}$ & 干扰源的有效接收半径，$R_{\mathrm{eff}}\in[1000,1500]$ & 米 \\
+    $R_c$           & 清除半径，$R_c=20$ & 米 \\
+    $a,\,b,\,s$     & 第二检测点的前进量、侧移量与沿轴错位 $s=\rho-a$ & 米 \\
+    $T$             & 自第一次检测至该源被清除的总虚拟时间 & 秒 \\
+    $\lambda,\mu,\kappa$ & 策略参数，见算法 \ref{alg:p2} & --- \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -587,8 +631,522 @@ $\delta=1^\circ$ 代入式 \eqref{eq:r1r2}，解析值与算法数值解在有�
 但与定理 \ref{thm:counter}(c) 中“Jung 界可被楔形之交精确取到”的解析结论相互印证。
 
 \subsection{问题二：第二个检测点的选择策略}
+\label{sec:p2}
 
-% TODO: 待完成。含 5.2.1 模型建立、5.2.2 求解结果、5.2.3 模型检验。
+\subsubsection{一次检测后的可行集与评价准则}
+\label{sec:p2set}
+
+设第一个检测点为 $S_1$、测得示向度为 $\theta_1$，记 $\rho=|S_1G|$。除楔形 $W_1$ 外，
+题目还给出两条信息：既然在 $S_1$ 收到了信号，则 $\rho\le R_{\mathrm{eff}}\le1500$ 米；
+既然返回的是示向度而非“距离过近”，则 $\rho>5$ 米。再计入干扰源必在目标区域内，得可行集
+\begin{equation}
+  \Omega_1 = W_1 \cap \{\,5<\rho\le\rho_{\mathrm{hi}}\,\}\cap D(O,R),
+  \qquad
+  \rho_{\mathrm{hi}}=\min\bigl(1500,\ \text{沿楔形至目标圆边界的距离}\bigr).
+  \label{eq:p2omega}
+\end{equation}
+
+$S_1$ 位于原点时 $\rho_{\mathrm{hi}}=1500$ 米，$\Omega_1$ 纵长 $1495$ 米而最大横宽仅
+$2\rho_{\mathrm{hi}}\tan\delta=52.4$ 米，形如一条细长的扇形带（图 \ref{fig:p2set}(a)）。
+可见\textbf{方位已定到 $\pm1^\circ$，而距离几乎一无所知}，于是：
+
+\begin{center}
+\emph{第二个检测点的作用不是改善方位精度，而是确定距离。}
+\end{center}
+
+“较好的定位效果”需要一个可计算的判据。定位区域的\textbf{面积}是一个自然的候选，
+但对本题并不适用：由附录 2 第 8 条，清除要求站位与干扰源相距不超过 $R_c=20$ 米，
+故可否一次清除取决于定位区域在\textbf{最坏方向}上的尺度，而面积对形状不敏感。
+表 \ref{tab:p2area} 给出一组面积几乎相同、可清除性却相反的实例。
+
+\begin{table}[H]
+  \centering
+  \caption{面积相同而可清除性相反的两个第二检测点（$\rho=1000$ 米）}
+  \label{tab:p2area}
+  \begin{tabular}{lccccc}
+    \toprule
+    第二检测点 $(a,b)$ & 面积/米$^2$ & 直径 $d$/米 & $R_{\min}$/米 & 交会角 $\varphi$ & 可否一次清除 \\
+    \midrule
+    $(800,\,200)$ & 488.6 & 60.16 & 30.08 & $45.0^\circ$ & 否 \\
+    $(950,\,395)$ & 489.2 & 39.49 & 19.75 & $82.8^\circ$ & 是 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+这并非巧合。以 $S_1$ 为原点、$\theta_1$ 为 $x$ 轴正向建立局部标架，
+记第二检测点为 $S_2=(a,b)$（$a$ 为沿示向线的前进量，$b$ 为侧移量），
+干扰源为 $G=(\rho,0)$，并记沿轴错位 $s=\rho-a$，参见图 \ref{fig:p2set}(b)。
+则两楔形之交的面积为 $4\rho\tan^2\!\delta\,(s^2+b^2)/b$，对 $b$ 取极小得 $b=|s|$，
+即交会角 $\varphi=45^\circ$——恰为表 \ref{tab:p2area} 中不可清除的一行。
+\textbf{面积准则会系统性地选中错误的构型}。
+故本文沿用问题一的口径，以直径 $d$ 度量定位效果，以 $R_{\min}\le R_c$ 作为可一次清除的充要判据。
+对 $n=2$，二者的关系比一般情形更紧密：
+
+\begin{lemma}[两楔形之交的覆盖性]
+\label{lem:p2para}
+若两楔形之交未被式 \eqref{eq:p2omega} 中的距离约束截断，则该交集为平行四边形，
+且 $R_{\min}=d/2$ 严格成立。
+\end{lemma}
+
+\begin{proof}
+在干扰源邻域内，楔形 $W_i$ 可视为宽度 $2r_i\tan\delta$ 的条带，两条带之交为平行四边形。
+其较长对角线所对的内角为钝角，由泰勒斯定理该顶点落在以长对角线为直径的圆内，另一顶点同理；
+故该圆覆盖全部顶点。又恒有 $R_{\min}\ge d/2$，两者相等。
+\end{proof}
+
+$2\times10^4$ 组随机构型中仅 $2.94\%$ 因被距离上界截断而不满足，且此时 $R_{\min}/(d/2)$
+最大仅 $1.000577$。因此在问题二范围内，判据“$d\le 2R_c=40$ 米”与“可一次清除”基本等价，
+这与问题一 $n\ge3$ 时的情形形成对照。
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      name=left, width=0.46\linewidth, height=4.2cm,
+      xlabel={沿示向线方向 / 米}, ylabel={横向 / 米},
+      xmin=-60, xmax=1580, ymin=-58, ymax=58,
+      grid=major, title={(a) 可行集 $\Omega_1$（横向放大 $14$ 倍）},
+      title style={font=\small}, tick label style={font=\scriptsize},
+      label style={font=\scriptsize},
+    ]
+      \addplot[draw=blue!70!black, fill=blue!15, thick]
+        table [x=x, y=y, col sep=comma] {\datadir/问题二_可行集.csv} \closedcycle;
+      \addplot[only marks, mark=triangle*, mark size=2.4pt, black] coordinates {(0,0)};
+      \node[font=\scriptsize] at (axis cs:120,-38) {$S_1$};
+      \node[font=\scriptsize] at (axis cs:760,34) {纵长 $1495$ 米，最大横宽 $52$ 米};
+    \end{axis}
+    \begin{axis}[
+      name=right, at={($(left.east)+(1.4cm,0)$)}, anchor=west,
+      width=0.40\linewidth, height=4.2cm, axis equal image,
+      xlabel={$x$ / 米}, ylabel={$y$ / 米},
+      xmin=-80, xmax=1150, ymin=-120, ymax=330,
+      grid=major, title={(b) 第二检测点的参数},
+      title style={font=\small}, tick label style={font=\scriptsize},
+      label style={font=\scriptsize},
+    ]
+      % 两条示向线均须过 G=(900,0)：S1 的沿 x 轴，S2 的方向为 (600,-150)
+      \addplot[gray, thick] coordinates {(0,0) (1100,0)};
+      \addplot[brown!70!black, thick] coordinates {(300,150) (1100,-50)};
+      \addplot[only marks, mark=triangle*, mark size=2.4pt, black] coordinates {(0,0)};
+      \addplot[only marks, mark=square*, mark size=2.0pt, black] coordinates {(300,150)};
+      \addplot[only marks, mark=star, mark size=3.0pt, red] coordinates {(900,0)};
+      \addplot[dashed, gray!70] coordinates {(300,0) (300,150)};
+      \node[font=\scriptsize] at (axis cs:150,-45) {$a$};
+      \node[font=\scriptsize] at (axis cs:370,80) {$b$};
+      \node[font=\scriptsize] at (axis cs:610,-45) {$s=\rho-a$};
+      \node[font=\scriptsize] at (axis cs:930,55) {$G$};
+      \node[font=\scriptsize] at (axis cs:255,195) {$S_2$};
+    \end{axis}
+  \end{tikzpicture}
+  \caption{一次检测后的可行集，与第二检测点的参数定义：$a$ 为沿示向线的前进量，
+           $b$ 为侧移量，$s=\rho-a$ 为沿轴错位}
+  \label{fig:p2set}
+\end{figure}
+
+\subsubsection{交会几何的闭式解与两次检测的极限}
+\label{sec:p2geo}
+
+沿用上节的局部标架与记号 $(a,b,s)$。将 $\sin\varphi=|b|/r_2$、$\cos\varphi=|s|/r_2$、
+$r_2=\sqrt{s^2+b^2}$ 代入第 \ref{sec:p1} 节的直径近似式，得
+\begin{equation}
+  d(a,b;\rho)\approx\frac{2\tan\delta}{|b|}\sqrt{s^2+b^2}\,\sqrt{(\rho+|s|)^2+b^2}.
+  \label{eq:p2d}
+\end{equation}
+式 \eqref{eq:p2d} 在 $b\to0$ 时发散，对应两检测点与干扰源共线、无法交会的退化情形。
+
+\begin{theorem}[最优侧移与最小直径]
+\label{thm:p2opt}
+固定 $\rho$ 与前进量 $a$，式 \eqref{eq:p2d} 关于 $b$ 的极小点与极小值为
+\begin{equation}
+  b^{*}=\sqrt{|s|\,(\rho+|s|)},
+  \qquad
+  d_{\min}(a)=2\tan\delta\,\bigl(\rho+2|s|\bigr).
+  \label{eq:p2bstar}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+对 $\ln d$ 求导并置零得 $-1/b+b/(s^2+b^2)+b/((\rho+|s|)^2+b^2)=0$，
+整理为 $b^4=s^2(\rho+|s|)^2$，取正根即得 $b^{*}$。回代时注意
+$s^2+b^{*2}=|s|(\rho+2|s|)$ 与 $(\rho+|s|)^2+b^{*2}=(\rho+|s|)(\rho+2|s|)$，
+其乘积为 $b^{*2}(\rho+2|s|)^2$，开方后与 $2\tan\delta/b^{*}$ 相乘即得 $d_{\min}$。
+\end{proof}
+
+式 \eqref{eq:p2bstar} 的含义是清晰的：以正横站位（$s=0$，即 $\varphi=90^\circ$）的理想值
+$2\rho\tan\delta$ 为基准，\textbf{沿轴每错位 $1$ 米，定位区域直径线性增加
+$4\tan\delta\approx0.07$ 米}；例如 $|s|=0.5\rho$ 时直径已是理想值的 $2$ 倍。
+换言之，距离估计的相对误差几乎按一比一转化为定位精度的损失。
+
+式 \eqref{eq:p2bstar} 还给出一条与第二点位置\textbf{无关}的下界：
+$d\ge d_{\min}(a)\ge 2\rho\tan\delta$。即无论第二检测点选在何处，
+定位区域直径都不可能小于 $2\rho\tan\delta$，这是\textbf{两次检测所能达到的精度极限}。
+结合一次清除的必要条件 $d\le2R_c$（因 $R_{\min}\ge d/2$）即得源距上限
+\begin{equation}
+  \rho\le R_c/\tan\delta=1145.8\ \text{米}.
+  \label{eq:p2limit}
+\end{equation}
+设 $\rho$ 已知并穷举 $(a,b)$（附加“第二检测点与干扰源至少相距 $R_c$”这一现实约束，
+否则应直接清除而非再次检测），所得最小 $R_{\min}$ 在 $\rho=1100,1146,1300$ 米处分别为
+$19.21,20.01,21.97$ 米，与式 \eqref{eq:p2limit} 吻合。故有：
+
+\begin{center}
+\emph{源距超过 $1146$ 米时，即便事先已知距离，两次检测也不足以一次清除；
+第二次检测应以将距离歧义由 $1495$ 米压缩至百米量级为目标。}
+\end{center}
+
+此结论与问题一定理 \ref{thm:clearable} 并不矛盾：后者设两检测点距源\textbf{均}不超过
+$\ell$ 且张角 $90^\circ$，给出可主动构造的充分条件 $\ell^{*}\approx770$ 米；
+而式 \eqref{eq:p2limit} 是第一检测点已由题目固定时的理论上限。
+此外由第 \ref{sec:p1} 节，$\theta_1-\theta_2$ 恰等于交会角，故定位区域有界当且仅当
+$\varphi>2\delta$，这是候选区域的\textbf{可行性门槛}，与“$\varphi$ 越接近 $90^\circ$ 越好”
+这一优化方向属于不同层次。
+
+\begin{theorem}[一致最优点的不存在性]
+\label{thm:p2none}
+不存在对全部 $\rho\in(5,\rho_{\mathrm{hi}}]$ 一致最优的第二检测点。
+\end{theorem}
+
+\begin{proof}
+由式 \eqref{eq:p2bstar}，$d_{\min}(a)=2\tan\delta(\rho+2|\rho-a|)$ 关于 $a$ 的极小点集
+恰为单点集 $\{a=\rho\}$。不同 $\rho$ 对应的极小点集互不相交，故不存在同时使所有 $\rho$
+取到极小的 $a$。
+\end{proof}
+
+定理 \ref{thm:p2none} 表明“使定位区域直径最小的第二检测点”这一提法本身不适定，
+必须代之以稳健化准则；而不同的稳健化方式会给出相距数百米的不同答案，
+这正是下一节要解决的问题。
+
+\subsubsection{代价加权与候选区域}
+\label{sec:p2region}
+
+\paragraph{行程即代价.}
+题目在问题三中明确“派出\textbf{一只}机器狗”，附件 2 第 1.4 节亦规定每次测试只允许一个机器狗进入。
+因此\textbf{两个检测点并非两台同时布设的传感器，而是同一条路径上的先后两站}：
+第二检测点只能靠机器狗自行走到，而行进所消耗的正是题目要求最小化的时间。
+脱离行程孤立地谈“较好的定位效果”，在数学上等价于假设存在第二台可瞬时布设的设备，与题设不符。
+
+为量化这一代价，定义\textbf{绕行} $\Delta=|S_1S_2|+|S_2G|-\rho$，
+即相对于沿示向线直趋干扰源多走的路程。按假设 (8) 的先验取期望（$\mathbb{E}[\rho]=855$ 米），
+结果见表 \ref{tab:p2detour}：几何上最优的站位需多走近一公里，而本文推荐的站位几乎就在必经之路上。
+
+\begin{table}[H]
+  \centering
+  \caption{不同第二检测点的期望绕行（$\mathbb{E}[\rho]=855$ 米）}
+  \label{tab:p2detour}
+  \begin{tabular}{lcccc}
+    \toprule
+    第二检测点 $(a,b)$ & $|S_1S_2|$/米 & $\mathbb{E}|S_2G|$/米 & 绕行 $\Delta$/米 & 折合/秒 \\
+    \midrule
+    本文推荐 $(450,120)$      & $466$  & $470$  & $\mathbf{80}$   & $16.0$ \\
+    几何准则最优 $(900,580)$  & $1071$ & $657$  & $873$           & $174.5$ \\
+    极小极大最优 $(1125,925)$ & $1456$ & $1009$ & $\mathbf{1610}$ & $322.1$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+据此，本文以\textbf{期望总清除时间} $T$（自第一次检测起至该源被清除为止的虚拟时间，
+含行进、检测与清除）为准则，目标为 $\min_{(a,b)}\mathbb{E}_\rho[T]$。
+由机器狗速度 $5$ 米/秒与单次检测耗时 $5$ 秒，可将时间与路程统一到\textbf{等效行程}量纲：
+\begin{equation}
+  \text{一次检测}\;=\;5\ \text{秒}\;=\;25\ \text{米行程},
+  \label{eq:p2exch}
+\end{equation}
+于是各项代价可直接相加比较。这一换算贯穿本节的全部权衡。
+
+\paragraph{精度的边际收益递减.}
+图 \ref{fig:p2front} 给出\textbf{效率前沿}：给定至第二检测点的行进距离，
+期望定位区域直径 $\mathbb{E}[d]$ 所能达到的最小值。两个事实决定了本问的答案。
+
+其一，$\mathbb{E}[d]$ 在 $50.2$ 米处饱和——在整个 $(a,b)$ 平面上取不到更小的值，
+行进距离由 $1050$ 米再增加 $500$ 米反而回升至 $58.5$ 米。而一次清除要求 $d\le40$ 米，
+\textbf{该下确界高于门限}。这意味着 $\mathbb{E}[d]=52$ 米与 $209$ 米在“是否仍需第三次检测”
+上并无区别，为压低前者所增加的行程换取的是\textbf{超出门限、无法利用的精度}。
+
+其二，$\mathbb{E}[d]$ 较优的点，一次清除概率未必高：$(1018,587)$ 处 $\mathbb{E}[d]=51.6$ 米
+而一次清除概率为 $0$，$(700,430)$ 处 $\mathbb{E}[d]=57.8$ 米而该概率达 $0.445$。
+其原因在于，行至千米之外后对任何源距第二楔形均较宽，直径处处约 $50$ 米、处处恰好不足；
+而稍近的站位对部分源距可压入 $20$ 米以内。\textbf{对一个仅在门限处有意义的量取期望，
+会被“处处恰好不足”的解所误导}，这是 $\mathbb{E}[d]$ 准则本身的局限。
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      width=0.62\linewidth, height=4.8cm, ymode=log,
+      xlabel={至第二检测点的行进距离 / 米}, ylabel={$\mathbb{E}[d]$ / 米},
+      xmin=80, xmax=1720, grid=major,
+      ytick={40,50.2,70,100,150,200,300,500},
+      yticklabels={40,50.2,70,100,150,200,300,500},
+      minor ytick={}, log ticks with fixed point,
+      tick label style={font=\scriptsize},
+      legend style={font=\scriptsize, at={(0.97,0.97)}, anchor=north east, draw=black!30},
+      tick label style={font=\scriptsize}, label style={font=\scriptsize},
+    ]
+      \addplot[blue!70!black, thick, mark=*, mark size=1.1pt]
+        table [x=行进距离, y=几何最优_ED, col sep=comma] {\datadir/问题二_效率前沿.csv};
+      \addlegendentry{给定行程下可达的 $\min\mathbb{E}[d]$}
+      \addplot[black, dotted, thick, domain=80:1720] {50.2};
+      \addlegendentry{下确界 $50.2$ 米}
+      \addplot[red, thick, dashed, domain=80:1720] {40};
+      \addlegendentry{一次清除门限 $2R_c=40$ 米}
+    \end{axis}
+  \end{tikzpicture}
+  \caption{定位精度的效率前沿。边际收益迅速递减，且下确界 $50.2$ 米高于可清除门限 $40$ 米，
+           故增加行程无法换来可用的精度}
+  \label{fig:p2front}
+\end{figure}
+
+\paragraph{两个方向的权衡.}
+按式 \eqref{eq:p2exch} 折算后，侧移量与前进量各自的权衡可直接相减比较。
+
+侧移量 $b$ 的代价是绕行，当 $b\ll a$ 时约为 $b^2\rho/[2a(\rho-a)]$，是\textbf{二阶}量；
+其收益是定位区域变小从而后续补测绕行减少，由式 \eqref{eq:p2d} 知正比于 $1/b$。
+令代价合计为 $Ab^2+B/b$，极小点 $b^{*}=(B/2A)^{1/3}$，代入化简得 $b^{*}\approx0.10\rho$，
+即\textbf{侧移量约取源距的十分之一}。注意此处为\textbf{立方根}依赖：
+欲使最优侧移改变一倍需使代价比改变八倍，故目标函数在该方向上极不敏感——
+这正是本问答案呈现为一个区域而非一个点的数学根源。
+
+前进量 $a$ 的绕行 $\Delta(a)$ 关于 $a$ 呈 U 形：在起点侧移需先横向走出再斜向折回，
+绕行为\textbf{一阶}量 $\approx b$；而在行程中段侧移时路径近乎直线，绕行降为二阶量
+$\approx2b^2/\rho$（$b=120$、$\rho=855$ 时分别为 $128$ 米与 $34$ 米）。
+另一侧的代价是\textbf{超越真实源距后需往返两遍}，而 $\rho$ 恰为未知量：
+取 $a=300,450,600$ 米时超越概率分别为 $6\%,13\%,23\%$，期望往返惩罚分别为 $11,38,91$ 米。
+由 $a$ 从 $300$ 增至 $600$ 米仅使后续绕行减少约 $23$ 米而惩罚增加 $80$ 米，
+故最优前进量应取源距分布的一个\textbf{低分位点}而非中位数。
+
+上述闭式分析给出的是量级判断：$b^{*}\approx0.10\rho$ 在 $\rho=855$ 米处约合 $86$ 米，
+$a$ 的最优值落在 $300\sim450$ 米。它们与下文由全平面扫描得到的推荐点
+$(450,120)$ 及候选区域 \eqref{eq:p2region} 一致，可视为对数值结果的解析印证；
+闭式偏小是因为它以单一代表源距 $\mathbb{E}[\rho]$ 计算，而扫描是对整个先验取期望。
+
+\paragraph{候选区域.}
+在 $(a,b)$ 平面上以 $25\times15$ 米的步长扫描 $7120$ 个格点，
+对每点在 $\rho$ 上取期望后分别计算两种准则，结果见图 \ref{fig:p2region}。
+两准则的最优点相距约 $700$ 米；表 \ref{tab:p2compare} 进一步给出四种稳健化准则各自的最优点。
+
+\begin{table}[H]
+  \centering
+  \caption{四种准则给出四个不同的最优第二检测点}
+  \label{tab:p2compare}
+  \begin{tabular}{llcccc}
+    \toprule
+    准则 & 最优点 $(a,b)$ & $\mathbb{E}[d]$/米 & $\max D$/米 & 一次清除概率 & $\mathbb{E}[T]$/秒 \\
+    \midrule
+    $\min\mathbb{E}[d]$（几何）    & $(900,580)$  & $\mathbf{50.2}$ & $92.8$ & $0.256$ & $363.5$ \\
+    $\min\max D$（极小极大）        & $(1125,925)$ & $57.2$ & $\mathbf{75.9}$ & $0.000$ & $516.3$ \\
+    $\max P(\text{一次清除})$       & $(700,430)$  & $57.8$ & --- & $\mathbf{0.445}$ & $291.0$ \\
+    $\min\mathbb{E}[T]$（本文采用） & $(450,145)$  & $172.9$ & $398.6$ & $0.238$ & $\mathbf{224.1}$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+表 \ref{tab:p2compare} 说明\textbf{“最优”离开准则没有意义}，准则的选取才是本问的核心。
+本文依题目正文“此任务完成时间越短越好”与上述单机器狗论证，采用 $\min\mathbb{E}[T]$。
+取相对最优值 $5\%$ 的容差，并在该水平集内取整体落入其中的内接矩形，得候选区域
+\begin{equation}
+  \boxed{\;
+  a\in[0.10,\,0.30]\,\rho_{\mathrm{hi}},\qquad
+  |b|\in[0.05,\,0.12]\,\rho_{\mathrm{hi}},\qquad\text{左右对称}
+  \;}
+  \label{eq:p2region}
+\end{equation}
+（$\rho_{\mathrm{hi}}=1500$ 米时即 $a\in[150,450]$ 米、$|b|\in[75,180]$ 米，
+相当于沿与示向度成 $7^\circ\!\sim\!45^\circ$ 的方向行进 $230\!\sim\!690$ 米）。该区域满足三条性质：
+
+\begin{enumerate}[label=(\roman*)]
+  \item \textbf{整体位于接收可靠域内}。由 $\rho\le R_{\mathrm{eff}}$ 知
+        $R_{\mathrm{eff}}\ge\max(1000,\rho)$，故 $|S_2G|\le\max(1000,\rho)$ 即可保证收到信号；
+        对 $\rho$ 取遍可行区间，该条件的解为两圆盘之交 $D((5,0),1000)\cap D((1000,0),1000)$，
+        即图 \ref{fig:p2region} 中的透镜形边界。$4\times10^5$ 次抽样表明域内接收率恒为 $1$。
+  \item \textbf{满足有界性门槛}。对区域内全部点与 $\rho\in(5,1500]$ 全程扫描，
+        最小交会角为 $3.18^\circ$，为门槛 $2\delta$ 的 $1.6$ 倍。
+  \item \textbf{区域内各点的期望总清除时间均不超过最优值的 $1.05$ 倍}，
+        见第 \ref{sec:p2check} 节的逐点检验。
+\end{enumerate}
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+    /pgfplots/every axis/.append style={
+      width=0.80\linewidth, height=4.6cm, view={0}{90},
+      ylabel={侧移量 $b$ / 米},
+      xmin=-200, xmax=1500, ymin=0, ymax=1000,
+      colormap name=viridisrev, colorbar,
+      colorbar style={font=\scriptsize, width=0.24cm},
+      title style={font=\small},
+      tick label style={font=\scriptsize}, label style={font=\scriptsize},
+      xtick={0,250,500,750,1000,1250,1500}, ytick={0,250,500,750,1000},
+    }]
+    \begin{axis}[
+      name=g, point meta min=50, point meta max=300,
+      colorbar style={ylabel={$\mathbb{E}[d]$ / 米}},
+      title={(a) 几何准则 $\min\mathbb{E}[d]$：最优点远在 $(900,580)$},
+      xticklabels={},
+    ]
+      \addplot3[surf, shader=interp, mesh/rows=34]
+        table [x=a, y=b, z=z, col sep=comma] {\datadir/问题二_等值面直径.csv};
+      \addplot3[white, very thick] coordinates
+        {(750,400,1e4) (1050,400,1e4) (1050,835,1e4) (750,835,1e4) (750,400,1e4)};
+      \addplot3[only marks, mark=star, mark size=4pt, draw=black, fill=white]
+        coordinates {(900,580,1e4)};
+      \node[font=\scriptsize, black] at (axis cs:900,320,1e4) {几何准则的 $5\%$ 域};
+    \end{axis}
+    \begin{axis}[
+      name=t, at={($(g.south)-(0,1.1cm)$)}, anchor=north,
+      point meta min=216, point meta max=420,
+      colorbar style={ylabel={$\mathbb{E}[T]$ / 秒}},
+      title={(b) 时间准则 $\min\mathbb{E}[T]$（本文采用）：最优点移至 $(450,145)$},
+      xlabel={前进量 $a$ / 米},
+    ]
+      \addplot3[surf, shader=interp, mesh/rows=34]
+        table [x=a, y=b, z=z, col sep=comma] {\datadir/问题二_等值面时间.csv};
+      \addplot3[green!40!black, thick, dashed] table [x=x, y=y, z expr=1e4, col sep=comma]
+        {\datadir/问题二_接收可靠域.csv};
+      \addplot3[red, very thick] coordinates
+        {(150,75,1e4) (450,75,1e4) (450,180,1e4) (150,180,1e4) (150,75,1e4)};
+      \addplot3[only marks, mark=star, mark size=4pt, draw=black, fill=red]
+        coordinates {(450,120,1e4)};
+      \addplot3[only marks, mark=o, mark size=3pt, thick, white]
+        coordinates {(900,580,1e4)};
+      \node[font=\scriptsize, black] at (axis cs:300,300,1e4) {候选区域};
+      \node[font=\scriptsize, green!55!white] at (axis cs:330,760,1e4) {接收可靠域边界};
+      \node[font=\scriptsize, white] at (axis cs:900,700,1e4) {几何准则最优点};
+    \end{axis}
+  \end{tikzpicture}
+  \caption{两种准则下的目标函数等值面（色标已反转，亮色为优）。
+           几何准则的最优点位于 $(900,580)$，时间准则的最优点移至 $(450,145)$，
+           二者相距约 $700$ 米；红色矩形为式 \eqref{eq:p2region} 给出的候选区域}
+  \label{fig:p2region}
+\end{figure}
+
+\paragraph{检测策略.}
+式 \eqref{eq:p2region} 按 $\rho_{\mathrm{hi}}$ 缩放，故对任意起测点与示向度自动适用。
+完整策略见算法 \ref{alg:p2}，其中后续补测沿用同一原则：新楔形应横切当前定位区域的长轴，
+侧移量取该区域半长的 $\kappa$ 倍。由式 \eqref{eq:p2exch}，“单步到位”（$\kappa=1$）
+虽可一次将区域压缩至极小却需多走一个半长；实测 $\kappa=1$ 时平均耗时 $227.3$ 秒，
+$\kappa=0.25$ 时为 $217.0$ 秒，差额 $10$ 秒恰合 $50$ 米、约两次检测的代价，故取 $\kappa=0.25$。
+
+\begin{algorithm}[H]
+  \caption{基于集员估计与代价加权的单源定位清除策略}
+  \label{alg:p2}
+  \begin{algorithmic}[1]
+    \Require 第一检测点 $S_1$ 与示向度 $\theta_1$；参数 $\lambda=0.30$、$\mu=0.08$、$\kappa=0.25$
+    \Ensure 干扰源被清除
+    \State $\rho_{\mathrm{hi}}\gets\min(1500,\ \text{沿楔形至目标圆边界的距离})$
+    \State $\Omega\gets W(S_1,\theta_1,\delta)\cap\{5<\rho\le\rho_{\mathrm{hi}}\}\cap D(O,R)$
+    \State 取 $\sigma\in\{+1,-1\}$ \Comment{侧移方向，问题二中任选，问题三中取朝向其余待定位源的一侧}
+    \State $P\gets S_1+\lambda\rho_{\mathrm{hi}}\,u(\theta_1)+\sigma\mu\rho_{\mathrm{hi}}\,n(\theta_1)$
+    \While{真}
+      \State 移动至 $P$ 并检测，得结果 $z$
+      \If{$z=\texttt{near}$} \State 就地清除；\textbf{返回} \EndIf
+      \If{$z=\texttt{direction}$} \State $\Omega\gets\Omega\cap W(P,\theta,\delta)$ \EndIf
+      \State 计算 $\Omega$ 的最小覆盖圆 $(c,R_{\min})$ 与直径 $d$
+      \If{$R_{\min}\le R_c$} \State 移动至 $c$ 并清除；\textbf{返回} \EndIf
+      \State $n\gets\Omega$ 直径方向的法向（取靠近当前位置的一侧）
+      \State $P\gets c+\kappa\,(d/2)\,n$ \Comment{在区域中心的正横方向补测，横切长轴}
+    \EndWhile
+  \end{algorithmic}
+\end{algorithm}
+
+\subsubsection{数值结果与模型检验}
+\label{sec:p2check}
+
+\paragraph{仿真设置.}
+按附件 1 表 1 与附件 2 第 4 节复刻模拟器的计时规则（移动按距离除以速度、检测 $5$ 秒、
+切换频道 $1$ 秒、清除成功 $5$ 秒、未发现 $3$ 秒），并将示向度误差实现为\textbf{位置的确定性函数}
+以复刻“同一地点重复检测不改变误差”，示向度截取两位小数、算法侧楔形半角取 $1.005^\circ$。
+按假设 (8) 抽样并仅保留在 $S_1$ 能收到信号的算例，共 $300$ 组，随机种子 $20260910$。
+
+\paragraph{与理论下界的比较.}
+设机器狗一开始即已知干扰源位置，直趋并清除，耗时为“源距除以速度 $5$ 米/秒，
+再加清除的 $5$ 秒”，此为\textbf{任何策略的下界}，
+与所用算法无关。本批算例平均源距 $844.7$ 米，故下界为 $173.9$ 秒。各策略对比见表 \ref{tab:p2compare2}。
+
+\begin{table}[H]
+  \centering
+  \caption{各策略的平均总清除时间（同一批 $300$ 组算例）}
+  \label{tab:p2compare2}
+  \begin{tabular}{lccc}
+    \toprule
+    策略 & 平均总清除时间/秒 & 相对下界 & 平均检测次数 \\
+    \midrule
+    理论下界（已知干扰源位置）              & $173.9$ & $1.00$ & --- \\
+    \textbf{本文策略}                       & $\mathbf{216.5}$ & $\mathbf{1.24}$ & $2.96$ \\
+    微小位移（$\lambda=\mu=0.02$）          & $246.2$ & $1.42$ & $3.49$ \\
+    单次交会后覆盖清除                      & $251.7$ & $1.45$ & $2.00$ \\
+    纯径向推进（示向度反转二分）            & $257.7$ & $1.48$ & $3.10$ \\
+    覆盖式清除搜索（不作交会）              & $302.4$ & $1.74$ & $1.00$ \\
+    几何准则最优点 $(900,580)$              & $366.1$ & $2.10$ & $2.75$ \\
+    纯横向偏移（$\lambda=0,\mu=0.5$）       & $409.2$ & $2.35$ & $3.53$ \\
+    极小极大准则最优点 $(1125,925)$         & $516.3$ & $2.97$ & $3.09$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+本文策略的平均总清除时间为理论下界的 $1.24$ 倍，故\textbf{任何策略相对本文策略的改进幅度
+不超过 $19.7\%$}，且该上界只有在事先已知干扰源位置时方能达到；次优方案已落后 $14\%$。
+表中“覆盖式清除搜索”指不作交会定位而以 $81$ 个清除点覆盖整条楔形
+（构造经 $2\times10^5$ 次抽样验证零遗漏）：因清除“未发现”仅耗时 $3$ 秒而短于一次检测，
+该方案构成实质竞争，但实测仍慢 $40\%$。
+按式 \eqref{eq:p2exch} 折算可见代价去向：移动占 $91\%$、检测占 $7\%$、清除占 $2\%$；
+超出理论下界的部分中，绕行占 $65\%$、额外检测占 $23\%$，两者量级相当，是均衡最优的特征。
+
+\paragraph{候选区域的逐点检验.}
+式 \eqref{eq:p2region} 并非事后描述，而是以“区域内各点的实测平均耗时不超过最优值 $1.05$ 倍”
+为\textbf{定义}。对其四角、中心与推荐点逐点仿真，结果见表 \ref{tab:p2verify}：
+区域内全部检验点均不超过 $1.046$，区域外各点显著劣化。
+需说明的是，$5\%$ 水平集本身大于该矩形且非矩形（例如 $a=100$、$a=600$ 与 $b=35$ 处实测均约 $1.036$），
+采用内接矩形是为便于表述与使用，其代价是结论偏保守：\textbf{区域外未必不佳，而区域内必定达标}。
+
+\begin{table}[H]
+  \centering
+  \caption{候选区域的逐点检验（$\rho_{\mathrm{hi}}=1500$ 米）}
+  \label{tab:p2verify}
+  \begin{tabular}{lccccc}
+    \toprule
+    & \multicolumn{2}{c}{区域四角} & 区域中心 & 推荐点 & 区域外 \\
+    \cmidrule(lr){2-3}\cmidrule(lr){4-4}\cmidrule(lr){5-5}\cmidrule(lr){6-6}
+    $(a,b)$/米 & $(150,75)$ & $(150,180)$ & $(300,127.5)$ & $(450,120)$ & $(800,120)$ \\
+    平均耗时/秒 & $222.1$ & $226.5$ & $216.0$ & $216.5$ & $249.0$ \\
+    相对最优    & $1.026$ & $\mathbf{1.046}$ & $0.998$ & $1.000$ & $1.150$ \\
+    \midrule
+    $(a,b)$/米 & $(450,75)$ & $(450,180)$ & --- & --- & $(900,580)$ \\
+    平均耗时/秒 & $216.5$ & $222.1$ & --- & --- & $366.1$ \\
+    相对最优    & $1.000$ & $1.026$ & --- & --- & $1.691$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{模型检验.}
+本文的最优点由两条互不共享推导的途径得到：基于闭式收尾代价的代理模型全平面扫描给出 $(450,145)$，
+端到端仿真的参数搜索给出 $(450,120)$；将前者代入仿真实测为 $217.9$ 秒，仅劣 $0.6\%$，
+二者落在同一平坦区内。
+
+几何实现按第 \ref{sec:p1check} 节的原则复核，复核代码不调用被检验代码，而由题面定义重新推导：
+楔形隶属按“方位角与示向度之差不超过 $\delta$”直接判定；定位区域顶点由边界曲线两两求交后
+按原始定义筛选；凸包、直径与最小覆盖圆均独立实现。结果为：$600$ 组随机构型的直径最大偏差
+$9.0\times10^{-3}$ 米（源于外圈圆弧的折线化，且模型侧恒不小于复核侧，偏于安全）；
+$10^6$ 个随机点的隶属判定中“依定义属于而模型判定不属于”的个数为 $0$；
+最小覆盖圆除与问题一的枚举算法比对外，另以\textbf{最优性证书}直接验证——
+即检验“全部顶点被覆盖”与“圆心落在支撑点集的凸包内”这一对充要条件\cite{rockafellar}，
+后者保证半径不可再缩，$3000$ 个随机凸多边形全部通过。
+变异测试向模型注入楔形半角错误、顶点偏移、
+遗漏距离约束等六类缺陷，复核\textbf{全部检出}。
+
+\paragraph{对假设的灵敏度.}
+本节的全部解析结论（式 \eqref{eq:p2d}--\eqref{eq:p2limit}、引理 \ref{lem:p2para}、
+定理 \ref{thm:p2opt} 与 \ref{thm:p2none}）只依赖确界 $|\varepsilon|\le\delta$，
+与误差的分布形态及相关结构无关。数值结果同样稳健：将误差改为三角分布、取最坏值 $\pm\delta$、
+或引入相关长度 $300$ 至 $1000$ 米的空间相关误差场，平均耗时的变动分别为
+$-0.6\%$、$+2.0\%$、$-0.7\%\!\sim\!-0.2\%$，而“定位区域包含干扰源真实位置”的比例
+在所有情景下恒为 $100\%$——这是集员估计的固有保证。
+
+至于先验假设 (8)，将其换为 $\rho$ 上的均匀分布后最优侧移量几乎不变（$145\to130$ 米），
+而最优前进量由 $450$ 米移至 $225$ 米。故“侧移量取源距的十分之一”这一结论稳健，
+而前进量对先验较为敏感，使用时应以式 \eqref{eq:p2region} 的区间而非单点为准。
+此外，以 $(0,0)$、$(900,0)$、$(1400,0)$、$(1000,1000)$ 为起测点分别重新抽样并就地重搜参数，
+沿用固定参数 $(\lambda,\mu)=(0.30,0.08)$ 相对于就地重搜的劣化均不超过 $0.4\%$，
+表明按 $\rho_{\mathrm{hi}}$ 缩放的自适应性成立。
 
 \subsection{问题三：全向干扰源的自动搜索定位与清除策略}
 
@@ -609,8 +1167,15 @@ $\delta=1^\circ$ 代入式 \eqref{eq:r1r2}，解析值与算法数值解在有�
   \item \textbf{算法结构简单且退化情形完备。} 楔形化为半平面之交后，
         任意 $n$ 的处理方式统一；表 \ref{tab:degenerate} 给出了五种形态的完整分类，
         并对空集与无界情形给出明确的检出机制，不会输出没有实际意义的结果。
-  \item \textbf{结论经独立方法交叉验证。} 第 \ref{sec:p1check} 节的三层检验均不调用被检验代码，
-        且经变异测试确认其检错能力。
+  \item \textbf{结论经独立方法交叉验证。} 第 \ref{sec:p1check}、\ref{sec:p2check} 节的检验
+        均不调用被检验代码，且经变异测试确认其检错能力。
+  \item \textbf{评价准则由题意而非习惯确定。} 问题二中，本文没有沿用“定位区域越小越好”的
+        直观准则，而是先证明该提法不适定（定理 \ref{thm:p2none}），再依据“只派出一只机器狗”
+        与“完成时间越短越好”两条题设，改用期望总清除时间为准则；
+        表 \ref{tab:p2compare} 表明不同准则给出的最优点相距数百米，准则的选取确有实质影响。
+  \item \textbf{给出了最优性的可验证上界。} 以“已知干扰源位置”构造理论下界，
+        得出本文策略的可改进幅度不超过 $19.7\%$（表 \ref{tab:p2compare2}）。
+        该结论不依赖于与其他具体方法的比较，因而不会因遗漏某种竞争方案而失效。
 \end{enumerate}
 
 \subsection{模型的缺点}
@@ -618,19 +1183,34 @@ $\delta=1^\circ$ 代入式 \eqref{eq:r1r2}，解析值与算法数值解在有�
 \begin{enumerate}[label=(\arabic*)]
   \item 集员估计给出的是包含真实位置的区域，\textbf{不提供区域内的概率分布}。
         若后续需要按概率加权决策，需另行引入分布假设。
-  \item 本文未将“干扰源必位于目标区域内”这一先验并入定位区域。
-        引入该先验可进一步收紧区域，但当干扰源接近目标区域边界时会产生圆弧边，
-        使定位区域不再是多边形，与题目“多边形定位区域”的措辞不符。
-        经测算，此情形仅出现于最外约 $2\%$ 的面积范围内，且对直径的影响在厘米量级，
-        故本文选择不作收紧，所得直径是偏保守的上界。
+  \item 问题一的定位区域\textbf{未并入}“干扰源必位于目标区域内”这一先验：
+        引入后当干扰源接近边界时会产生圆弧边，使定位区域不再是多边形，
+        与题目“多边形定位区域”的措辞不符。经测算此情形仅出现于最外约 $2\%$ 的面积范围内，
+        对直径的影响在厘米量级，故所得直径是偏保守的上界。
+        需要说明的是，问题二的可行集 $\Omega_1$（式 \eqref{eq:p2omega}）\textbf{已并入}该先验
+        以及距离约束，因为该问不要求输出多边形，且这两条约束对候选区域的位置有实质影响。
+  \item 问题二的策略在一个\textbf{参数族}内取优，而非全部策略中的最优。
+        真正的最优需求解部分可观测的序贯决策问题，本文未予求解；
+        其影响已由理论下界限定在 $19.7\%$ 以内（表 \ref{tab:p2compare2}）。
+  \item 问题二的期望值依赖于干扰源位置的先验假设 (8)。灵敏度分析表明侧移量的结论稳健，
+        而前进量对先验较为敏感，故本文以区间而非单点给出候选区域。
 \end{enumerate}
 
 \subsection{模型的推广}
 
-问题一建立的定位区域模型与直径算法可直接用于问题二至四：
-问题二中以定位区域直径作为选点优劣的度量；
-问题三、四中在每次新增检测后增量地更新定位区域，
-并以 $R_{\min}\le 20$ 米作为可实施清除的判据。
+问题一建立的定位区域模型与直径算法是后续三问的共同基础：问题二在其上叠加距离约束
+构成可行集，并以 $R_{\min}\le R_c$ 作为可实施清除的判据；问题三、四中，
+每次新增检测只需对当前可行集再作一次半平面裁剪，即可增量更新，无需重算。
+
+问题二确立的\textbf{代价加权}思路对问题三、四尤为关键：由于只有一只机器狗，
+检测点的选取与路径规划实为同一问题，“定位精度”与“行进代价”必须在同一量纲下权衡。
+式 \eqref{eq:p2exch} 给出的换算（一次检测等价于 $25$ 米行程）可直接沿用；
+而候选区域式 \eqref{eq:p2region} 是一个区域而非一个点，这一自由度使得在问题三中
+可以选取同时落入多个干扰源候选区域的位置，实现\textbf{一次停靠服务多个频道}，
+从而把检测成本摊薄。
+
+本文方法可推广至一般的\textbf{仅测向、不测距}的定位问题：只要观测误差以确界形式给出、
+且观测代价与观测位置相关，本文“集员估计 $+$ 代价加权”的框架即可适用。
 
 % ==========================================================
 % AI 工具使用声明
@@ -645,6 +1225,8 @@ $\delta=1^\circ$ 代入式 \eqref{eq:r1r2}，解析值与算法数值解在有�
 \CumcmAIUsed{代码编写与调试、数值实验脚本、文档排版}
 
 \begin{thebibliography}{9}
+  \bibitem{schweppe} Schweppe F C. Recursive state estimation: Unknown but bounded errors
+    and system inputs[J]. IEEE Transactions on Automatic Control, 1968, 13(1): 22--28.
   \bibitem{jung} Jung H W E. Über die kleinste Kugel, die eine räumliche Figur einschließt[J].
     Journal für die reine und angewandte Mathematik, 1901, 123: 241--257.
   \bibitem{sh} Sutherland I E, Hodgman G W. Reentrant polygon clipping[J].
@@ -738,6 +1320,74 @@ def 覆盖判定(顶点, A, B):
         if float(np.dot(A - np.asarray(V), B - np.asarray(V))) > 1e-7:
             return False
     return True
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=Python, caption={一次检测后的可行集与最优侧移（问题二）}]
+def 先验区域(S1, theta1, delta, rho_lo=5.0, rho_hi=None, R=1800.0, 弧段数=6):
+    """可行集 Omega_1 = 楔形 ∩ {rho_lo < rho <= rho_hi} ∩ 目标圆盘。
+    外圈圆弧用切线外逼近，保证所得区域是真实可行集的超集（宁可高估不可漏）。"""
+    if rho_hi is None:
+        rho_hi = 距离上界(S1, theta1, delta, R)
+    多边形 = [(-BOX, -BOX), (BOX, -BOX), (BOX, BOX), (-BOX, BOX)]
+    半平面 = list(楔形半平面(S1, theta1, delta))
+    半平面 += 圆的外切半平面(S1, rho_hi, 弧段数, (theta1 - delta, theta1 + delta))
+    u = np.array([np.cos(np.radians(theta1)), np.sin(np.radians(theta1))])
+    半平面.append((-u[0], -u[1], -(rho_lo * np.cos(np.radians(delta)) + float(S1 @ u))))
+    半平面 += 圆的外切半平面((0.0, 0.0), R, 360)
+    for a, b, c in 半平面:
+        多边形 = 裁剪(多边形, a, b, c)
+        if not 多边形:
+            return []
+    return 去冗余(多边形)
+
+
+def 最优侧移(rho, a):
+    """定理 3：b* = sqrt(|s|(rho+|s|))，s = rho - a。"""
+    s = np.abs(rho - a)
+    return np.sqrt(s * (rho + s))
+
+
+def 最优直径(rho, a, delta):
+    """定理 3：d_min = 2 tan(delta) (rho + 2|s|)。"""
+    s = np.abs(rho - a)
+    return 2.0 * np.tan(np.radians(delta)) * (rho + 2.0 * s)
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python, caption={单源定位清除策略（问题二，对应算法 2）}]
+def 跑一局(sim, S1, theta1, LAM=0.30, MU=0.08, KAP=0.25, 频道=1, 最多检测=12):
+    """集员估计 + 代价加权的单源策略。sim 为复刻模拟器计时规则的本地仿真器。"""
+    rho_hi = 距离上界(S1, theta1, DELTA_算法)
+    Omega = 先验区域(S1, theta1, DELTA_算法, rho_hi=rho_hi)
+    目标 = 局部转全局((LAM * rho_hi, MU * rho_hi), S1, theta1)   # 侧移方向可取反
+    for _ in range(最多检测):
+        回 = sim.measure(目标, 频道)
+        if 回["measure_result"] == "near":
+            sim.clear(sim.位置, 频道)
+            return
+        if 回["measure_result"] == "direction":
+            新 = 定位区域(Omega, 目标, 回["svd_deg"], DELTA_算法)
+            if 新:
+                Omega = 新
+        d, R = 区域指标(Omega)[:2]
+        c = np.asarray(最小覆盖圆快(Omega)[0], dtype=float)
+        if R <= R_CLEAR:                      # 可一次清除，走到圆心清除
+            sim.clear(c, 频道)
+            return
+        目标 = 补测点(Omega, sim.位置, KAP)    # 在区域正横方向补测，横切长轴
+
+
+def 补测点(Omega, 位置, kappa):
+    """新楔形应横切当前区域长轴；侧移量取区域半长的 kappa 倍。
+    kappa 由式 (15) 的等效行程换算权衡得出，取 0.25。"""
+    D, (A, B) = 求直径快(Omega)
+    c = np.asarray(最小覆盖圆快(Omega)[0], dtype=float)
+    轴 = np.asarray(B, float) - np.asarray(A, float)
+    轴 = 轴 / max(float(np.hypot(*轴)), 1e-12)
+    n = np.array([-轴[1], 轴[0]])
+    if float(n @ (np.asarray(位置, float) - c)) < 0:
+        n = -n
+    return c + max(kappa * D / 2.0, 10.0) * n
 \end{lstlisting}
 
 \end{appendices}
