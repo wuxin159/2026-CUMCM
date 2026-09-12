@@ -182,10 +182,13 @@ def 把握校准(案例表):
     原选 = P.选补测点
     待 = {}
 
-    def 选(b, m, pos, par, 已测=()):
-        q, R, p = 原选(b, m, pos, par, 已测)
-        待[(b.频道, round(q[0], 3), round(q[1], 3))] = p
-        return q, R, p
+    def 选(b, m, pos, par, 已测=(), *a, **kw):
+        # 透传其余参数（后续 / 返回分），只截获「预测把握」这一项用于校准
+        出 = 原选(b, m, pos, par, 已测, *a, **kw)
+        q, R, p = 出[0], 出[1], 出[2]
+        if q is not None:
+            待[(b.频道, round(q[0], 3), round(q[1], 3))] = p
+        return 出
     P.选补测点 = 选
     原检 = S.机器狗.检测
 
