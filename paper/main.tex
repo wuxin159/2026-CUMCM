@@ -236,8 +236,9 @@
 %======================================================================
 \section{模型假设}
 
-在不改变题目核心约束的前提下，作如下假设。其中假设 (1)--(3) 直接来自题目，
-假设 (4)--(6) 是本文为完成定量分析所作的建模约定，并非题目直接给定。
+在不改变题目核心约束的前提下，作如下假设。其中假设 (1)(2)(3)(6)(7)(9) 直接来自题目，
+假设 (4)(5)(8)(10) 是本文为完成定量分析所作的建模约定，并非题目直接给定，
+各条末尾均注明了来源。
 
 \begin{enumerate}[label=(\arabic*)]
   \item 测向机在检测点测得的示向度与干扰源真实方位角之差的绝对值不超过 $1^\circ$
@@ -346,6 +347,17 @@ $\theta_i$ 之差不超过 $\delta$，故 $G$ 必落在以 $S_i$ 为顶点、$\t
 其中 $\angle(\cdot)$ 表示向量的方位角，$L$ 称为\textbf{定位区域}。当 $n=2$ 时，
 $L$ 即题目附录 2 图 2 中的红色四边形；问题一要求将其推广到任意 $n$。
 
+\paragraph{$\delta$ 的取值：两处不同。}
+问题一的示向度是题目给定的理论量，取 $\delta=1^\circ$。但附件 2 另有三处规定
+\texttt{svd\_deg} \textbf{保留两位小数}，故经模拟器取得读数时，记舍入残差为 $r$，有
+$\theta_{\text{报}}=\theta_{\text{真}}+\varepsilon+r$ 且 $\lvert r\rvert\le0.005^\circ$，
+由报数反推真值时成立的界\textbf{不是 $1^\circ$ 而是 $1.005^\circ$}。
+若仍按 $1^\circ$ 构造楔形，真值会被排除——$4\times10^7$ 次抽样实测单点排除概率 $0.1246\%$，
+$n=20$ 时累积至 $2.462\%$。故问题三、四对接模拟器时一律取 $\delta=1.005^\circ$，
+代价是定位区域横宽增加 $0.5\%$（$1000$ 米处由 $34.91$ 米增至 $35.08$ 米，即 $17$ 厘米），
+换取真值不被误排除。需说明的是，题目把“误差范围 $[-1^\circ,1^\circ]$”与“保留两位小数”
+分列两句，\textbf{未言明舍入发生在误差约束之前还是之后}，演练中又无从验证，故取防御性数值。
+
 记 $u_i^{\mathrm{lo}}$、$u_i^{\mathrm{hi}}$ 为方向 $\theta_i\mp\delta$ 的单位向量。
 由于楔形张角 $2\delta=2^\circ$ 远小于 $180^\circ$，$W_i$ 恰为两个半平面之交：
 
@@ -363,6 +375,14 @@ $2n$ 只是上界。若某检测点距干扰源较远、或其示向方向与已
 相应半平面即成为\textbf{冗余约束}——第 \ref{sec:p1num} 节的算例 C 用了 $5$ 个检测点，
 定位区域却只有 $6$ 个顶点，即 $4$ 个半平面冗余。可见\textbf{决定定位精度的是检测点的
 几何布置而非个数}，此结论直接指向问题二的选点策略。
+
+\paragraph{为何不把目标区域并入定位区域。}
+假设 (3) 给出“干扰源必在半径 $R$ 的圆域内”，它是关于 $G$ 的\emph{先验}，与读数无关。
+若把它并入而取 $L\cap D(O,R)$，当 $G$ 接近边界时所得区域将带一条\textbf{圆弧边}、不再是多边形，
+直径需在弧上求极值、覆盖判据式 \eqref{eq:criterion} 的顶点枚举亦告失效，
+而换来的收缩仅发生在极少数贴边构型上。题目附录 2 图 2 给出的红色四边形本身也未被圆域截断，
+可见题意所指的正是纯交会区域。故\textbf{问题一的 $L$ 只由读数决定}；
+到问题二起需要对源距取期望时，再把该先验作为独立约束显式加入可行集（式 \eqref{eq:p2omega}）。
 
 \subsubsection{直径的计算与算法}
 
@@ -404,8 +424,10 @@ $V_1,\ldots,V_m$ 为 $L$ 的顶点。故只需枚举顶点对，无须考虑边�
 否则定位区域跨出圆域时会被错误裁剪并切出并不存在的直边。
 
 \paragraph{复杂度与退化情形。}
-裁剪为 $O(nm)$，求直径为 $O(m^2)$，$m\le 2n$。实际 $n$ 不超过数十，代价可忽略；
-若 $n$ 极大可用旋转卡壳将求直径降至 $O(m)$。平面上凸集之交只有五种形态，
+裁剪为 $O(nm)$，求直径为 $O(m^2)$，$m\le 2n$。求直径一步存在 $O(m)$ 的旋转卡壳算法，
+本文\textbf{不予采用}：其需额外维护凸包的顶点有序性与对踵点对，而本题 $m\le2n$ 不过数十，
+$O(m^2)$ 枚举的实际开销可忽略，且枚举结果可逐对核验、便于独立复核（第 \ref{sec:p1check} 节），
+故以可验证性换取渐近效率。平面上凸集之交只有五种形态，
 构成完整分类，见表 \ref{tab:degenerate}。单点与线段虽为测度零事件，
 但直径均有定义，算法照常计算而不作特例跳过。
 
@@ -591,14 +613,12 @@ $n=2$ 亦可失效，机理相同：楔形两边界射线以 $2\delta$ 发散，
 第 \ref{sec:p1num} 节的算例 A 即为一例。
 
 \paragraph{Jung 界在本题下有多紧。}
-定理 \ref{thm:counter}(c) 表明 Jung 界可被楔形之交取到，但取等需 $\delta=15^\circ$，
-而本题 $\delta=1^\circ$ 时该对称构型的比值仅 $1.0101$。是否意味着实际配置离 Jung 界很远？
-本文以干扰源置于原点、$n$ 个检测点距其 $300\sim1200$ 米、方位与误差均匀随机的方式
-各抽 $4000$ 组配置（区域无界者剔除），结果见表 \ref{tab:jungscan}：$n\ge3$ 时比值已达
-Jung 界的 $98\%$ 以上。故\textbf{式 \eqref{eq:jung} 右端对本题并非空泛的理论上界}，
-援引 Jung 定理是必要的而非形式的。该结果为数值扫描所得、不构成证明，
-但与定理 \ref{thm:counter}(c) 的解析结论相互印证；扫描脚本 \texttt{数值验证.py}
-与其完整输出见附录 \ref{app:files} 的支撑材料清单。
+定理 \ref{thm:counter}(c) 的取等需 $\delta=15^\circ$，而本题 $\delta=1^\circ$ 时该对称构型的比值
+仅 $1.0101$。为确认该界在本题参数下仍接近可达，以干扰源置于原点、$n$ 个检测点距其
+$300\sim1200$ 米、方位与误差均匀随机的方式各抽 $4000$ 组配置（无界者剔除），
+结果见表 \ref{tab:jungscan}：$n\ge3$ 时实测比值已达 Jung 界的 $98\%$ 以上。
+故\textbf{式 \eqref{eq:jung} 右端并非空泛的理论上界，援引 Jung 定理是承重的}。
+扫描脚本见附录 \ref{app:files}。
 
 \begin{table}[H]
   \centering
@@ -615,7 +635,7 @@ Jung 界的 $98\%$ 以上。故\textbf{式 \eqref{eq:jung} 右端对本题并非
   \end{tabular}
 \end{table}
 
-比值随 $n$ 增大而升高，机理与定理 \ref{thm:counter} 一致：检测点方向越分散，
+比值随 $n$ 升高的机理与定理 \ref{thm:counter} 一致：检测点方向越分散，
 楔形之交越接近“被三个方向撑开”的近等边三角形，而等边三角形正是 Jung 界的取等构型。
 
 \paragraph{一次清除的判据。}
@@ -667,9 +687,8 @@ $\sqrt{w_1^2+w_2^2}$ 与 $2\sqrt{w_1^2+w_2^2}$。由 $w_i\le(d+\ell)\sin\delta$ 
 $1000$ 米}：机器狗总能移动到距干扰源 $770$ 米以内，且在该处必定仍能接收到信号，
 因而上述两次检测总可执行。当 $G$ 接近目标区域边界时，所需检测位置可能落在
 半径 $1800$ 米的圆域之外——题目附件 2 第 1.1 节明确允许机器狗提交目标区域外的位置，
-故结论对边界附近的干扰源同样成立。此外，式 \eqref{eq:clearbound} 中的界是保守的：
-$\ell=770$ 米时实测 $R_{\min}=19.0$ 米，约为上界的 $95\%$；
-且张角在 $60^\circ\sim120^\circ$ 范围内、$\ell=500$ 米时 $R_{\min}$ 均不超过 $17.5$ 米，
+故结论对边界附近的干扰源同样成立。式 \eqref{eq:clearbound} 中的界是保守的，
+且张角在 $60^\circ\sim120^\circ$ 范围内、$\ell=500$ 米时实测 $R_{\min}$ 均不超过 $17.5$ 米，
 故实际执行时无须精确取到 $90^\circ$。
 
 \subsubsection{数值算例与结果}
@@ -700,44 +719,89 @@ $\ell=770$ 米时实测 $R_{\min}=19.0$ 米，约为上界的 $95\%$；
 超出圆 $0.0874$ 米，判据侧亦有 $(A-V)\cdot(B-V)=+4.324$ 米$^2>0$。这说明覆盖失败
 并不需要刻意构造的对称布置，在随机误差下即会出现。
 
-算例 B 是定理 \ref{thm:counter} 在 $\rho=900$ 米、$\delta=1^\circ$ 处的实例，
-其定位区域如图 \ref{fig:caseB}；六条边等长（均 $18.1444$ 米）但外接半径在两值间交替，
+算例 B 是定理 \ref{thm:counter} 在 $\rho=900$ 米、$\delta=1^\circ$ 处的实例：
+六条边等长（均 $18.1444$ 米）但外接半径在 $17.9589$ 与 $18.3245$ 米两值间交替，
 仅具 $3$ 次旋转对称性，为\textbf{等边而非正}的六边形，正是定理 \ref{thm:counter} 的结论。
 算例 C 表明覆盖失败并非必然：其最小覆盖圆恰为以直径为直径的圆，比值精确等于 $1$，
 $\eta=0$。三组算例的定位区域均包含干扰源真实位置，与假设 (1) 一致。
+三者的几何形态与两个圆的相对位置见图 \ref{fig:p1cases}。
 
 \begin{figure}[H]
   \centering
-  \begin{tikzpicture}
-    \begin{axis}[
-      width=0.62\linewidth, height=6cm,
-      axis equal image,
-      xlabel={$x$ / 米}, ylabel={$y$ / 米},
-      xmin=-26, xmax=26, ymin=-26, ymax=26,
-      grid=major,
-      legend style={font=\scriptsize, at={(1.03,0.5)}, anchor=west, draw=black!30},
-      tick label style={font=\scriptsize}, label style={font=\small},
-    ]
-      \addplot[thick, draw=blue!70!black, fill=blue!12]
-        table [x=x, y=y, col sep=comma] {\datadir/问题一_算例B_定位区域.csv};
-      \addlegendentry{定位区域}
-      % 圆心与半径取自 results/问题一_求解汇总.csv
-      \addplot[red, thick, domain=0:360, samples=181, smooth]
-        ({0.1583+18.1417*cos(x)}, {-0.0914+18.1417*sin(x)});
-      \addlegendentry{以直径为直径的圆}
-      \addplot[green!50!black, thick, dotted, domain=0:360, samples=181, smooth]
-        ({18.3245*cos(x)}, {18.3245*sin(x)});
-      \addlegendentry{最小覆盖圆}
-      \addplot[red, thick, mark=*, mark size=1.4pt]
-        coordinates {(15.869,-9.162) (-15.553,8.979)};
-      \addlegendentry{直径 $AB$}
-      \addplot[only marks, mark=*, mark size=2.6pt, orange] coordinates {(0,18.3245)};
-      \addlegendentry{落在圆外的顶点}
-    \end{axis}
-  \end{tikzpicture}
-  \caption{算例 B 的定位区域与两个圆。两圆半径相差仅 $0.18$ 米、图中几乎重合，
-           顶部顶点超出以直径为直径的圆 $0.2749$ 米，具体数值见表 \ref{tab:p1result}}
-  \label{fig:caseB}
+  \begin{minipage}{0.32\linewidth}
+    \centering
+    \begin{tikzpicture}
+      \begin{axis}[width=\linewidth, height=3.9cm, axis equal image,
+        xmin=548, xmax=610, ymin=261, ymax=323,
+        xtick={555,580,605}, ytick={270,292,315},
+        tick label style={font=\tiny}, label style={font=\tiny},
+        xlabel={$x$ / 米}, ylabel={$y$ / 米}, grid=major,
+        title={(a) 算例 A：$n=2$，$\eta=0.0874$}, title style={font=\tiny}]
+        \addplot[draw=blue!70!black, fill=blue!12, thick]
+          table [x=x, y=y, col sep=comma] {\datadir/问题一_算例A_定位区域.csv};
+        \addplot[red, thick, domain=0:360, samples=121, smooth]
+          ({579.0424+24.6898*cos(x)}, {292.1438+24.6898*sin(x)});
+        \addplot[green!50!black, densely dotted, thick, domain=0:360, samples=121, smooth]
+          ({579.1267+24.6900*cos(x)}, {292.1661+24.6900*sin(x)});
+        \addplot[red, thick, mark=*, mark size=1pt]
+          coordinates {(572.7252,316.0118) (585.3595,268.2758)};
+        \addplot[only marks, mark=*, mark size=2.6pt, orange]
+          coordinates {(602.9754,298.5563)};
+        \addplot[only marks, mark=x, mark size=2.4pt, black, thick]
+          coordinates {(600,300)};
+      \end{axis}
+    \end{tikzpicture}
+  \end{minipage}\hfill
+  \begin{minipage}{0.32\linewidth}
+    \centering
+    \begin{tikzpicture}
+      \begin{axis}[width=\linewidth, height=3.9cm, axis equal image,
+        xmin=-21, xmax=21, ymin=-21, ymax=21,
+        xtick={-20,0,20}, ytick={-20,0,20},
+        tick label style={font=\tiny}, label style={font=\tiny},
+        xlabel={$x$ / 米}, ylabel={$y$ / 米}, grid=major,
+        title={(b) 算例 B：$n=3$，$\eta=0.2749$}, title style={font=\tiny}]
+        \addplot[draw=blue!70!black, fill=blue!12, thick]
+          table [x=x, y=y, col sep=comma] {\datadir/问题一_算例B_定位区域.csv};
+        \addplot[red, thick, domain=0:360, samples=121, smooth]
+          ({0.1583+18.1417*cos(x)}, {-0.0914+18.1417*sin(x)});
+        \addplot[green!50!black, densely dotted, thick, domain=0:360, samples=121, smooth]
+          ({18.3245*cos(x)}, {18.3245*sin(x)});
+        \addplot[red, thick, mark=*, mark size=1pt]
+          coordinates {(15.8695,-9.1623) (-15.5528,8.9794)};
+        \addplot[only marks, mark=*, mark size=2.6pt, orange]
+          coordinates {(0,18.3245)};
+        \addplot[only marks, mark=x, mark size=2.4pt, black, thick]
+          coordinates {(0,0)};
+      \end{axis}
+    \end{tikzpicture}
+  \end{minipage}\hfill
+  \begin{minipage}{0.32\linewidth}
+    \centering
+    \begin{tikzpicture}
+      \begin{axis}[width=\linewidth, height=3.9cm, axis equal image,
+        xmin=-517.5, xmax=-485.5, ymin=777.7, ymax=809.7,
+        xtick={-515,-501,-487}, ytick={780,794,808},
+        tick label style={font=\tiny}, label style={font=\tiny},
+        xlabel={$x$ / 米}, ylabel={$y$ / 米}, grid=major,
+        title={(c) 算例 C：$n=5$，$\eta=0$}, title style={font=\tiny}]
+        \addplot[draw=blue!70!black, fill=blue!12, thick]
+          table [x=x, y=y, col sep=comma] {\datadir/问题一_算例C_定位区域.csv};
+        \addplot[red, thick, domain=0:360, samples=121, smooth]
+          ({-501.5405+13.8530*cos(x)}, {793.6666+13.8530*sin(x)});
+        \addplot[green!50!black, densely dotted, thick, domain=0:360, samples=121, smooth]
+          ({-501.5405+13.8530*cos(x)}, {793.6666+13.8530*sin(x)});
+        \addplot[red, thick, mark=*, mark size=1pt]
+          coordinates {(-487.7959,795.3962) (-515.2851,791.9370)};
+        \addplot[only marks, mark=x, mark size=2.4pt, black, thick]
+          coordinates {(-500,800)};
+      \end{axis}
+    \end{tikzpicture}
+  \end{minipage}
+  \caption{三组算例：定位区域（蓝）、直径 $AB$ 与以其为直径的圆（红实线）、最小覆盖圆（绿点线）、
+           越出直径圆的顶点（橙）、干扰源真实位置（$\times$，三者均落在区域内）。
+           (c) 中两圆\textbf{完全重合}，即 $R_{\min}=d/2$ 精确成立，故 $\eta=0$}
+  \label{fig:p1cases}
 \end{figure}
 
 \subsubsection{模型检验}
@@ -750,28 +814,15 @@ $\eta=0$。三组算例的定位区域均包含干扰源真实位置，与假设
 交由 Qhull 算法\cite{qhull}求交，与本文所得顶点逐一配对；其三，在以定位区域为中心、
 半宽为其直径三倍的方框内均匀采样 $4\times10^5$ 点，比对“依式 \eqref{eq:wedge} 判定”与
 “依所求多边形判定”。三组算例中，第一、三层均无分歧，第二层顶点最大偏差不超过
-$2.3\times10^{-12}$ 米。此外采用\textbf{变异测试}向算法注入半角取值错误、
-楔形顶点偏移等典型缺陷，各层检验均能检出，表明验证方案确具检错能力。
+$2.3\times10^{-12}$ 米。三层皆通过只说明二者一致，\textbf{未说明检验本身是否有检错能力}，
+故进一步以\textbf{变异测试}检验检验方案：向求解代码注入半角取值错误、楔形顶点偏移等
+典型缺陷，各层均能报警。此举曾检出一处真实缺陷——最初的复核脚本调用了被测代码本身，
+对上述缺陷全部漏报，据此改为按内法向形式独立重推。
 
-定理 \ref{thm:counter} 为算法提供了独立于数值计算的校验基准。将 $\rho=900$ 米、
-$\delta=1^\circ$ 代入式 \eqref{eq:r1r2}，解析值与算法数值解在有效数字范围内完全一致：
-
-\begin{table}[H]
-  \centering
-  \caption{算例 B 的解析值与数值解对照}
-  \label{tab:caseBcheck}
-  \begin{tabular}{lcccc}
-    \toprule
-     & $r_1$/米 & $r_2$/米 & $d$/米 & 超出量 $\eta$/米 \\
-    \midrule
-    解析值   & 17.958851905 & 18.324504190 & 36.283356095 & 0.274919837 \\
-    数值解   & 17.958851905 & 18.324504190 & 36.283356095 & 0.274919837 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-该算例坐标量级约 $18$ 米，双精度浮点绝对误差约 $4\times10^{-15}$ 米，
-与超出量 $0.2749$ 米相差 $13$ 个数量级，可排除数值误差导致覆盖判定失误的可能。
+定理 \ref{thm:counter} 还为算法提供了独立于数值计算的校验基准：将 $\rho=900$ 米、
+$\delta=1^\circ$ 代入式 \eqref{eq:r1r2}，解析值与算法数值解在 $11$ 位有效数字内完全一致
+（$r_1=17.958851905$、$r_2=18.324504190$、$d=36.283356095$、$\eta=0.274919837$ 米）。
+覆盖失败本身则无须数值佐证——式 \eqref{eq:key} 是精确代数恒等式，其符号已由解析式给定。
 
 \paragraph{结论对假设的依赖。}
 均匀分布假设 (5) 仅用于生成算例。本节全部结论——包括定位区域的定义与结构、直径与覆盖判据、
@@ -900,8 +951,11 @@ $2\times10^4$ 组随机构型中仅 $2.94\%$ 因被距离上界截断而不满�
 \subsubsection{交会几何的闭式解与两次检测的极限}
 \label{sec:p2geo}
 
-沿用上节的局部标架与记号 $(a,b,s)$。将 $\sin\varphi=|b|/r_2$、$\cos\varphi=|s|/r_2$、
-$r_2=\sqrt{s^2+b^2}$ 代入第 \ref{sec:p1} 节的直径近似式，得
+沿用上节的局部标架与记号 $(a,b,s)$。由引理 \ref{lem:p2para} 的条带视角，
+两条宽 $w_i=2r_i\tan\delta$、夹角为 $\varphi$ 的条带所交平行四边形，其长对角线为
+$d\approx\sqrt{w_1^2+w_2^2+2w_1w_2\lvert\cos\varphi\rvert}\,/\sin\varphi$
+（$\delta\ll\varphi$ 时成立）。将 $\sin\varphi=|b|/r_2$、$\cos\varphi=|s|/r_2$、
+$r_2=\sqrt{s^2+b^2}$ 代入，得
 \begin{equation}
   d(a,b;\rho)\approx\frac{2\tan\delta}{|b|}\sqrt{s^2+b^2}\,\sqrt{(\rho+|s|)^2+b^2}.
   \label{eq:p2d}
@@ -985,7 +1039,8 @@ $\varphi>2\delta$，这是候选区域的\textbf{可行性门槛}，与“$\varp
 \end{equation}
 
 即相对于沿示向线直趋干扰源多走的路程。按假设 (8) 的先验取期望（$\mathbb{E}[\rho]=855$ 米），
-结果见表 \ref{tab:p2detour}：几何上最优的站位需多走近一公里，而本文推荐的站位几乎就在必经之路上。
+结果见表 \ref{tab:p2detour}。注意第三列：几何准则最优点走出 $1071$ 米后\textbf{距干扰源仍有 $657$ 米}，
+这段路要再走一遍。\textbf{几何上最优的站位需多走近一公里，而本文推荐的站位几乎就在必经之路上。}
 
 \begin{table}[H]
   \centering
@@ -1020,8 +1075,8 @@ $\varphi>2\delta$，这是候选区域的\textbf{可行性门槛}，与“$\varp
 \textbf{该下确界高于门限}。这意味着 $\mathbb{E}[d]=52$ 米与 $209$ 米在“是否仍需第三次检测”
 上并无区别，为压低前者所增加的行程换取的是\textbf{超出门限、无法利用的精度}。
 
-其二，$\mathbb{E}[d]$ 较优的点，一次清除概率未必高：$(1018,587)$ 处 $\mathbb{E}[d]=51.6$ 米
-而一次清除概率为 $0$，$(700,430)$ 处 $\mathbb{E}[d]=57.8$ 米而该概率达 $0.445$。
+其二，$\mathbb{E}[d]$ 较优的点，一次清除概率未必高：$(1018,587)$ 处 $\mathbb{E}[d]$ 仅 $51.6$ 米
+而一次清除概率为 $0$，反不如表 \ref{tab:p2compare} 中 $\mathbb{E}[d]$ 更差的 $(700,430)$。
 其原因在于，行至千米之外后对任何源距第二楔形均较宽，直径处处约 $50$ 米、处处恰好不足；
 而稍近的站位对部分源距可压入 $20$ 米以内。\textbf{对一个仅在门限处有意义的量取期望，
 会被“处处恰好不足”的解所误导}，这是 $\mathbb{E}[d]$ 准则本身的局限。
@@ -1065,11 +1120,9 @@ $\varphi>2\delta$，这是候选区域的\textbf{可行性门槛}，与“$\varp
 这正是本问答案呈现为一个区域而非一个点的数学根源。
 
 前进量 $a$ 的绕行 $\Delta(a)$ 关于 $a$ 呈 U 形：在起点侧移需先横向走出再斜向折回，
-绕行为\textbf{一阶}量 $\approx b$；而在行程中段侧移时路径近乎直线，绕行降为二阶量
-$\approx2b^2/\rho$（$b=120$、$\rho=855$ 时分别为 $128$ 米与 $34$ 米）。
-另一侧的代价是\textbf{超越真实源距后需往返两遍}，而 $\rho$ 恰为未知量：
-取 $a=300,450,600$ 米时超越概率分别为 $6\%,13\%,23\%$，期望往返惩罚分别为 $11,38,91$ 米。
-由 $a$ 从 $300$ 增至 $600$ 米仅使后续绕行减少约 $23$ 米而惩罚增加 $80$ 米，
+绕行为\textbf{一阶}量 $\approx b$；在行程中段侧移时路径近乎直线，绕行降为二阶量 $\approx2b^2/\rho$。
+另一侧的代价是\textbf{超越真实源距后需往返两遍}，而 $\rho$ 恰为未知量。
+两者相权：$a$ 由 $300$ 增至 $600$ 米仅使后续绕行减少约 $23$ 米，而期望往返惩罚由 $11$ 米增至 $91$ 米，
 故最优前进量应取源距分布的一个\textbf{低分位点}而非中位数。
 
 上述闭式分析给出的是量级判断：$b^{*}\approx0.10\rho$ 在 $\rho=855$ 米处约合 $86$ 米，
@@ -1080,11 +1133,13 @@ $(450,120)$ 及候选区域 \eqref{eq:p2region} 一致，可视为对数值结�
 \paragraph{候选区域。}
 在 $(a,b)$ 平面上以 $25\times15$ 米的步长扫描 $7120$ 个格点，
 对每点在 $\rho$ 上取期望后分别计算两种准则，结果见图 \ref{fig:p2region}。
-两准则的最优点相距约 $700$ 米；表 \ref{tab:p2compare} 进一步给出四种稳健化准则各自的最优点。
+两准则最优点的间距见该图；表 \ref{tab:p2compare} 进一步给出四种稳健化准则各自的最优点。
 
 \begin{table}[H]
   \centering
-  \caption{四种准则给出四个不同的最优第二检测点}
+  \caption{四种准则给出四个不同的最优第二检测点。末行的 $(450,145)$ 由代理模型的
+    全平面扫描给出，与端到端仿真搜索给出的推荐点 $(450,120)$ 为两条互不共享推导的途径，
+    二者落在同一平坦区内（第 \ref{sec:p2check} 节）}
   \label{tab:p2compare}
   \begin{tabular}{llcccc}
     \toprule
